@@ -125,7 +125,7 @@ export default function Header() {
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             className="text-blue-800 hover:bg-primary-foreground/20"
           >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <User className="h-6 w-6" />}
+            {userName} {mobileMenuOpen ? <X className="h-6 w-6" /> : <User className="h-6 w-6" />}
           </Button>
         </div>
 
@@ -140,16 +140,12 @@ export default function Header() {
               <DropdownMenuTrigger asChild>
                 <Button variant="ghost" className="text-blue-800 hover:bg-primary-foreground/20">
                   <User className="h-4 w-4 mr-2" />
-                  {userName}
-                  {userRole && (
+                   <DropdownMenuContent align="end">
+                <DropdownMenuLabel>   {userRole && (
                     <Badge variant="outline" className="ml-2 text-xs border-blue-800 text-blue-800">
                       {userRole}
                     </Badge>
-                  )}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                  )}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem asChild>
                   <Link href={`/${userRole}/profile`}>Profile</Link>
@@ -162,6 +158,10 @@ export default function Header() {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
               </DropdownMenuContent>
+               
+                </Button>
+              </DropdownMenuTrigger>
+             
             </DropdownMenu>
           </div>
         </div>
