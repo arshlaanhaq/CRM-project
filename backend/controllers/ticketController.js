@@ -61,39 +61,40 @@ const getTicketById = async (req, res) => {
   }
 };
 const createTicket = async (req, res) => {
-  const { title, description, assignedTo, customerEmail } = req.body;
+  const { title, description, assignedTo, customer } = req.body;
+  const customerEmail = customer?.email;
 
   try {
-    // Find the latest pending complaint for the customer
+    // console.log("customerEmail:", customerEmail);
+
     const complaint = await Complaint.findOne({
       email: customerEmail,
       status: 'Pending',
     }).sort({ createdAt: -1 });
 
+    // console.log("complaint", complaint);
+
     if (!complaint) {
       return res.status(404).json({ message: 'No pending complaint found for this customer' });
     }
 
-    // Create a new ticket based on complaint details
     const ticket = await Ticket.create({
       title,
       description,
       assignedTo,
       createdBy: req.user.id,
       customer: {
-        _id: complaint._id, // 👈 Referencing the complaint's _id
+        _id: complaint._id,
         name: complaint.name,
         email: complaint.email,
         phone: complaint.phone,
       },
-      customerComplaint: complaint._id, // 👈 You MUST have this in your Ticket model
+      customerComplaint: complaint._id,
     });
 
-    // Update complaint status
     complaint.status = 'Ticket Created';
     await complaint.save();
 
-    // Send email to technician
     const technician = await User.findById(assignedTo);
     if (technician) {
       sendEmail(
@@ -103,7 +104,6 @@ const createTicket = async (req, res) => {
       ).catch(err => console.error('Technician Email failed:', err));
     }
 
-    // Send email to customer
     sendEmail(
       complaint.email,
       `Ticket Created: ${title}`,
@@ -117,6 +117,7 @@ const createTicket = async (req, res) => {
     res.status(500).json({ message: 'Server error while creating ticket' });
   }
 };
+
 
 
 
