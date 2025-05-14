@@ -109,17 +109,17 @@ export default function Header() {
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" className="text-blue-800 hover:bg-primary-foreground/20">
+               
+               Hi, {userName}
                 <User className="h-4 w-4 mr-2" />
-                {userName}
-                {userRole && (
-                  <Badge variant="outline" className="ml-2 text-xs border-blue-800 text-blue-800">
-                    {userRole}
-                  </Badge>
-                )}
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
+              <DropdownMenuLabel> {userRole && (
+                  <Badge variant="outline" className="ml-2 text-xs border-blue-800 text-blue-800">
+                    {userRole}
+                  </Badge>
+                )}</DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href={`/${userRole}/profile`}>Profile</Link>
