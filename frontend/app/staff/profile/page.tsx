@@ -62,6 +62,7 @@ export default function staffProfilePage() {
       try {
         const data = await getStaffProfile()
         setProfile(data)
+        console.log(data)
         setFormData({
           name: data.name || "",
           email: data.email || "",
