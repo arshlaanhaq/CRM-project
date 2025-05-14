@@ -31,6 +31,36 @@ const getComplaintById = async (req, res) => {
   }
 };
 
+
+const getCustomerEmailsFromComplaints = async (req, res) => {
+  try {
+    const emails = await CustomerComplaint.distinct("email");
+    res.status(200).json({ emails });
+  } catch (error) {
+    console.error("Error fetching emails:", error);
+    res.status(500).json({ message: "Server error while fetching customer emails" });
+  }
+};
+const getCustomerDetailsByEmail = async (req, res) => {
+  try {
+    const email = req.params.email;
+
+    const complaint = await CustomerComplaint.findOne({ email });
+
+    if (!complaint) {
+      return res.status(404).json({ message: 'Customer not found' });
+    }
+
+    res.status(200).json({
+      name: complaint.name,
+      phone: complaint.phone,
+    });
+  } catch (error) {
+    console.error("Error fetching customer details:", error);
+    res.status(500).json({ message: "Server error while fetching customer details" });
+  }
+};
+
 const updateComplaintStatus = async (req, res) => {
     try {
       const complaint = await CustomerComplaint.findById(req.params.id);
@@ -76,4 +106,5 @@ const deleteComplaint = async (req, res) => {
     }
   };
 
-module.exports = { createComplaint, getAllComplaints, getComplaintById, updateComplaintStatus ,deleteComplaint };
+module.exports = { createComplaint, getAllComplaints, getComplaintById,
+   updateComplaintStatus ,deleteComplaint, getCustomerEmailsFromComplaints,getCustomerDetailsByEmail };

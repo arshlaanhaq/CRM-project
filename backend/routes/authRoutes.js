@@ -23,8 +23,8 @@ router.post('/reset-password/:token', resetPassword);
 
 
 //  Staff/Admin shared routes
-router.get('/customers', protect, isAdminOrStaff, getAllCustomers);
-router.get('/customers/:id', protect, isAdminOrStaff, getCustomerById);
+// router.get('/customers', protect, isAdminOrStaff, getAllCustomers);
+// router.get('/customers/:id', protect, isAdminOrStaff, getCustomerById);
 router.get('/technicians', protect, isAdminOrStaff, getAllTechnicians);
 router.get('/technicians/:id', protect, isAdminOrStaff, getTechnicianById);
 
