@@ -110,7 +110,8 @@ const resetPassword = async (req, res) => {
 
 
 const register = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, phone, address, city, state, country } = req.body;
+
 
   if (role !== 'technician' && role !== 'staff') {
     return res.status(400).json({ message: 'Invalid role' });
@@ -123,7 +124,18 @@ const register = async (req, res) => {
 
   try {
     
-    const user = new User({ name, email, password, role });
+    const user = new User({
+  name,
+  email,
+  password,
+  role,
+  phone,
+  address,
+  city,
+  state,
+  country,
+});
+
     await user.save(); 
     const loginlink = `https://crm-project-frontend-hazel.vercel.app/login`;
     await sendEmail(
@@ -145,7 +157,7 @@ const register = async (req, res) => {
 // Login user
 const login = async (req, res) => {
   const { email, password } = req.body;
-  console.log("Login attempt:", req.body);
+
   // Check if the user exists
   const user = await User.findOne({ email })
   if (!user) return res.status(404).json({ message: 'User not found' });
