@@ -11,7 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Calendar, CheckCircle, Clock, User,Star} from "lucide-react";
+import { AlertCircle, Calendar, CheckCircle, Clock, User, Star } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApi } from "@/contexts/api-context";
 import { Textarea } from "@/components/ui/textarea"
@@ -31,21 +31,24 @@ export default function CustomerTicketDetail() {
   const [rating, setRating] = useState(0)
   const [feedbackText, setFeedbackText] = useState("")
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
-    const [userRole, setUserRole] = useState("")
-  
-    useEffect(() => {
-      const role = localStorage.getItem("userRole")
-      if (role) setUserRole(role)
-    }, [])
+  const [userRole, setUserRole] = useState("")
+
+  useEffect(() => {
+    const role = localStorage.getItem("userRole")
+    if (role) setUserRole(role)
+  }, [])
 
   useEffect(() => {
     if (id) {
       setLoading(true);
       getTicketById(id as string)
+
         .then((data) => {
+          console.log(data)
           setTicket(data);
           setLoading(false);
         })
+
         .catch((err) => {
           console.error("Error loading ticket:", err);
           setError("Failed to load ticket.");
@@ -84,7 +87,7 @@ export default function CustomerTicketDetail() {
         comment: feedbackText,
         submittedAt: new Date().toISOString(),
       }
-  
+
       const newComment = {
         id: Date.now().toString(),
         user: localStorage.getItem("userName") || "Customer",
@@ -92,19 +95,19 @@ export default function CustomerTicketDetail() {
         text: `Submitted feedback with rating: ${rating}/5`,
         timestamp: new Date().toISOString(),
       }
-  
+
       setTicket((prev) => ({
         ...prev,
         feedback: newFeedback,
         comments: [...(prev.comments || []), newComment], // ✅ safe spread
       }))
-  
+
       setFeedbackSubmitted(true)
     } catch (error) {
       console.error("Error submitting feedback:", error)
     }
   }
-  
+
 
 
   const getStatusBadge = (status: string) => {
@@ -170,9 +173,8 @@ export default function CustomerTicketDetail() {
             type="button"
             disabled={disabled}
             onClick={() => setRating(star)}
-            className={`${
-              disabled ? "cursor-default" : "cursor-pointer hover:text-yellow-400"
-            } ${star <= rating ? "text-yellow-400" : "text-gray-300"}`}
+            className={`${disabled ? "cursor-default" : "cursor-pointer hover:text-yellow-400"
+              } ${star <= rating ? "text-yellow-400" : "text-gray-300"}`}
           >
             <Star className="h-6 w-6 fill-current" />
           </button>
@@ -273,13 +275,72 @@ export default function CustomerTicketDetail() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Created */}
+                  {/* Technician Assignment Updated (if applicable) */}
+                  {ticket.history?.find((h: any) => h.updatedBy === ticket.assignedTo?._id) && (
+                    <div className="flex">
+                      <div className="mr-4 flex flex-col items-center">
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-purple-100">
+                          <User className="h-5 w-5 text-purple-700" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium">Technician Assignment Updated</div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatDate(
+                            ticket.history.find((h: any) => h.updatedBy === ticket.assignedTo?._id)?.updatedAt
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Assigned Technician */}
+                  {ticket.assignedTo && (
+                    <div className="flex">
+                      <div className="mr-4 flex flex-col items-center">
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-100">
+                          <User className="h-5 w-5 text-green-700" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium">
+                          Assigned to Technician: {ticket.assignedTo.name}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Email: {ticket.assignedTo.email}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Status Change History - Newest First */}
+                  {[...ticket.history]?.reverse().map((entry: any, index: number) => (
+                    <div key={entry._id || index} className="flex">
+                      <div className="mr-4 flex flex-col items-center">
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-yellow-100">
+                          <Clock className="h-5 w-5 text-yellow-700" />
+                        </div>
+                        {index < ticket.history.length - 1 && (
+                          <div className="h-full w-px bg-border" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="font-medium">
+                          Status changed to: {entry.status.replace("-", " ").toUpperCase()}
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatDate(entry.updatedAt)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Ticket Created - Show at Bottom */}
                   <div className="flex">
                     <div className="mr-4 flex flex-col items-center">
                       <div className="h-10 w-10 flex items-center justify-center rounded-full bg-primary/10">
                         <Calendar className="h-5 w-5 text-primary" />
                       </div>
-                      <div className="h-full w-px bg-border" />
                     </div>
                     <div>
                       <div className="font-medium">Ticket Created</div>
@@ -288,187 +349,62 @@ export default function CustomerTicketDetail() {
                       </div>
                     </div>
                   </div>
-
-                  {/* Assigned */}
-                  {ticket.assignedTo?.name ? (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-primary/10">
-                          <User className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="h-full w-px bg-border" />
-                      </div>
-                      <div>
-                        <div className="font-medium">
-                          Assigned to {ticket.assignedTo.name}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {formatDate(ticket.updatedAt)}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-primary/10">
-                          <User className="h-5 w-5 text-primary" />
-                        </div>
-                        <div className="h-full w-px bg-border" />
-                      </div>
-                      <div>
-                        <div className="font-medium">Assigned to</div>
-                        <div className="text-sm text-muted-foreground">
-                          Pending
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* In Progress */}
-                  {ticket.status === "in-progress" ? (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-yellow-100">
-                          <Clock className="h-5 w-5 text-yellow-700" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">In Progress</div>
-                        <div className="text-sm text-muted-foreground">
-                          {formatDate(ticket.updatedAt)}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-yellow-100">
-                          <Clock className="h-5 w-5 text-yellow-700" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">In Progress</div>
-                        <div className="text-sm text-muted-foreground">
-                          Pending
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Resolved */}
-                  {ticket.status === "resolved" ? (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-100">
-                          <CheckCircle className="h-5 w-5 text-green-700" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">Resolved</div>
-                        <div className="text-sm text-muted-foreground">
-                        {new Date(ticket.resolvedAt).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-100">
-                          <CheckCircle className="h-5 w-5 text-green-700" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">Resolved</div>
-                        <div className="text-sm text-muted-foreground">
-                          Pending
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Closed */}
-                  {ticket.status === "closed" ? (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-gray-100">
-                          <CheckCircle className="h-5 w-5 text-gray-700" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">Closed</div>
-                        <div className="text-sm text-muted-foreground">
-                        {new Date(ticket.closedAt).toLocaleString()}
-                        </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-gray-100">
-                          <CheckCircle className="h-5 w-5 text-gray-700" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">Closed</div>
-                        <div className="text-sm text-muted-foreground">
-                          Pending
-                        </div>
-                      </div>
-                    </div>
-                  )}
                 </div>
               </CardContent>
+
+
             </Card>
+
           </div>
         </div>
         {userRole === "customer" && ticket.status === "resolved" && (
-        <div className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Your Feedback</CardTitle>
-              <CardDescription>Please rate your experience with this service request</CardDescription>
-            </CardHeader>
-            <CardContent>
-              {ticket.feedback || feedbackSubmitted ? (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Your Rating</h3>
-                    <StarRating rating={ticket.feedback?.rating || rating} setRating={() => {}} disabled />
+          <div className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Your Feedback</CardTitle>
+                <CardDescription>Please rate your experience with this service request</CardDescription>
+              </CardHeader>
+              <CardContent>
+                {ticket.feedback || feedbackSubmitted ? (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Your Rating</h3>
+                      <StarRating rating={ticket.feedback?.rating || rating} setRating={() => { }} disabled />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Your Comments</h3>
+                      <p className="text-sm">{ticket.feedback?.comment || feedbackText}</p>
+                    </div>
+                    <div className="bg-green-50 text-green-700 p-3 rounded-md">
+                      Thank you for your feedback! It helps us improve our service.
+                    </div>
                   </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Your Comments</h3>
-                    <p className="text-sm">{ticket.feedback?.comment || feedbackText}</p>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Rate your experience</h3>
+                      <StarRating rating={rating} setRating={setRating} />
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Additional comments</h3>
+                      <Textarea
+                        placeholder="Share your experience with our service..."
+                        value={feedbackText}
+                        onChange={(e) => setFeedbackText(e.target.value)}
+                        className="min-h-[100px]"
+                      />
+                    </div>
+                    <div className="flex justify-end">
+                      <Button onClick={handleSubmitFeedback} disabled={rating === 0}>
+                        Submit Feedback
+                      </Button>
+                    </div>
                   </div>
-                  <div className="bg-green-50 text-green-700 p-3 rounded-md">
-                    Thank you for your feedback! It helps us improve our service.
-                  </div>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Rate your experience</h3>
-                    <StarRating rating={rating} setRating={setRating} />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-muted-foreground mb-2">Additional comments</h3>
-                    <Textarea
-                      placeholder="Share your experience with our service..."
-                      value={feedbackText}
-                      onChange={(e) => setFeedbackText(e.target.value)}
-                      className="min-h-[100px]"
-                    />
-                  </div>
-                  <div className="flex justify-end">
-                    <Button onClick={handleSubmitFeedback} disabled={rating === 0}>
-                      Submit Feedback
-                    </Button>
-                  </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   );

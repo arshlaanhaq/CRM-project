@@ -110,7 +110,8 @@ const resetPassword = async (req, res) => {
 
 
 const register = async (req, res) => {
-  const { name, email, password, role } = req.body;
+  const { name, email, password, role, phone, address, city, state, country } = req.body;
+
 
   if (role !== 'technician' && role !== 'staff') {
     return res.status(400).json({ message: 'Invalid role' });
@@ -122,14 +123,25 @@ const register = async (req, res) => {
   }
 
   try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = await User.create({ name, email, password: hashedPassword, role });
+    
+    const user = new User({
+  name,
+  email,
+  password,
+  role,
+  phone,
+  address,
+  city,
+  state,
+  country,
+});
 
-    //  Send email with plain password to the user
+    await user.save(); 
+    const loginlink = `https://crm-project-frontend-hazel.vercel.app/login`;
     await sendEmail(
       email,
       'Your account has been created',
-      `Hello ${name},\n\nYour account has been created.\nEmail: ${email}\nPassword: ${password}\n\nPlease login and change your password.`
+      `Hello ${name},\n\nYour account has been created.\nEmail: ${email}\nPassword: ${password}\n\nPlease login and change your password.\n${loginlink}\n\nThank you!`
     );
 
     res.status(201).json({
@@ -141,15 +153,15 @@ const register = async (req, res) => {
   }
 };
 
+
 // Login user
 const login = async (req, res) => {
   const { email, password } = req.body;
 
   // Check if the user exists
-  const user = await User.findOne({ email });
-  // console.log(user)
+  const user = await User.findOne({ email })
   if (!user) return res.status(404).json({ message: 'User not found' });
-
+ 
   if (!(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
