@@ -137,7 +137,7 @@ export default function TechniciansPage() {
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Active Technicians</CardTitle>
@@ -168,7 +168,7 @@ export default function TechniciansPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Average Resolution Time</CardTitle>
             </CardHeader>
@@ -179,7 +179,7 @@ export default function TechniciansPage() {
               </div>
               <p className="text-xs text-muted-foreground mt-1">-0.5h from last week</p>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         <Tabs defaultValue="all-technicians">

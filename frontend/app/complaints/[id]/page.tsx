@@ -8,6 +8,7 @@ import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/com
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Textarea } from "@/components/ui/textarea"
+import CreateTicketModal from "@/components/create-ticket-modal"
 import {
   Select,
   SelectTrigger,
@@ -74,6 +75,11 @@ export default function ComplaintDetailsPage() {
   const [noteText, setNoteText] = useState("")
   const [isSaving, setIsSaving] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+   const [userRole, setUserRole] = useState("")
+    useEffect(() => {
+    const role = localStorage.getItem("userRole")
+    if (role) setUserRole(role)
+  }, [])
 
   useEffect(() => {
     if (!params?.id) return
@@ -180,7 +186,7 @@ const handleDeleteComplaint = async () => {
 
 
   return (
-    <RoleGuard allowedRoles={["admin", "staff", "manager"]}>
+    <RoleGuard allowedRoles={["admin", "staff"]}>
       <LayoutWithSidebar>
         {isLoading ? (
           <div className="flex justify-center items-center h-64">
@@ -204,10 +210,7 @@ const handleDeleteComplaint = async () => {
                 Back to complaints
               </Button>
               <div className="ml-auto flex gap-2">
-                <Button variant="outline" size="sm">
-                  <Download className="h-4 w-4 mr-2" />
-                  Export
-                </Button>
+                {(userRole === "staff") && <CreateTicketModal />}
                 <Button
                   variant="destructive"
                   size="sm"
@@ -233,46 +236,44 @@ const handleDeleteComplaint = async () => {
                 <CardTitle>Complaint Details</CardTitle>
                 <CardDescription>{complaint.issueDescription}</CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                 <div>
-                  <Label>Product Name</Label>
+                  <Label className="text-sm font-medium text-gray-500">Product Name</Label>
                   <p>{complaint.productName}</p>
                 </div>
+                  <div>
+                  <Label className="text-sm font-medium text-gray-500">Serial Number</Label>
+                  <p>{complaint.serialNumber}</p>
+                </div>
                 <div>
-                  <Label>customer Name</Label>
+                  <Label className="text-sm font-medium text-gray-500">customer Name</Label>
                   <p>{complaint.name}</p>
                 </div>
                 <div>
-                  <Label>customer Email</Label>
+                  <Label className="text-sm font-medium text-gray-500">customer Email</Label>
                   <p>{complaint.email}</p>
                 </div>
                 <div>
-                  <Label>Phone Number</Label>
+                  <Label className="text-sm font-medium text-gray-500">Phone Number</Label>
                   <p>{complaint.phone}</p>
                 </div>
                 <div>
-                  <Label>Address</Label>
+                  <Label className="text-sm font-medium text-gray-500">Address</Label>
                   <p>{complaint.address}</p>
                 </div>
+              
+               
                 <div>
-                  <Label>Phone Number</Label>
-                  <p>{complaint.phone}</p>
-                </div>
-                <div>
-                  <Label>Assign to</Label>
-                  <p>{complaint.assignedTo || "Unassigned"}</p>
-                </div>
-                <div>
-                  <Label>Purchase Date</Label>
+                  <Label className="text-sm font-medium text-gray-500">Purchase Date</Label>
                   <p>{formatDate(complaint.dateOfPurchase)}</p>
                 </div>
 
-                {complaint.billFile && (
+                {/* {complaint.billFile && (
                   <div>
                     <Label>Uploaded Bill</Label>
                     <img src={complaint.billFile} alt="Bill" className="max-h-[300px] object-contain bg-gray-50" />
                   </div>
-                )}
+                )} */}
               </CardContent>
             </Card>
 

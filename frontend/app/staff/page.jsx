@@ -76,7 +76,7 @@ export default function StaffPage() {
             </CardContent>
           </Card>
 
-          <Card>
+          {/* <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Tickets Managed Today</CardTitle>
             </CardHeader>
@@ -100,7 +100,7 @@ export default function StaffPage() {
               </div>
               <p className="text-xs text-muted-foreground mt-1">-0.3h from last week</p>
             </CardContent>
-          </Card>
+          </Card> */}
         </div>
 
         <Tabs defaultValue="all-staff">

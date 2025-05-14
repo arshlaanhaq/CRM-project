@@ -10,9 +10,45 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { format } from "date-fns"
 import { CalendarIcon, Download, BarChart2, PieChart, LineChart } from "lucide-react"
+import TicketStatusChart from "@/components/ticket-status-chart"
 import { cn } from "@/lib/utils"
 import RoleGuard from "@/components/role-guard"
 import { useApi } from "@/contexts/api-context"
+import TechnicianPerformanceChart from "@/components/technician-performance-chart"
+interface ReportParams {
+  from?: string;
+  to?: string;
+  technicianId?: string;
+}
+interface Ticket {
+  _id: string;
+  title: string;
+  description: string;
+  status: string;
+  priority: string;
+  assignedTo?: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  customer: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  createdBy: {
+    _id: string;
+    name: string;
+    email: string;
+  };
+  createdAt: string;
+  history: {
+    status: string;
+    updatedBy?: string;
+    updatedAt: string;
+    _id: string;
+  }[];
+}
 
 export default function ReportsPage() {
   const api = useApi()
@@ -22,16 +58,32 @@ export default function ReportsPage() {
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date(),
   })
+  const [hasGenerated, setHasGenerated] = useState(false);
   const [status, setStatus] = useState("all")
   const [technician, setTechnician] = useState("all")
-  const [reportData, setReportData] = useState<any>(null)
+  const [reportData, setReportData] = useState<{ tickets: Ticket[]; total: number } | null>(null)
   const [technicians, setTechnicians] = useState<any[]>([])
+  const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
+
+
+  const { getReports, getAnalyticsSummary } = useApi()
+
+  const [type, setType] = useState<ReportParams>()
+
+  const [assignedTo, setAssignedTo] = useState<string | undefined>(undefined)
+  const [range, setRange] = useState<{ from: Date; to: Date }>({
+    from: new Date(new Date().setDate(new Date().getDate() - 30)),
+    to: new Date(),
+  })
+
+
+
 
   useEffect(() => {
     const fetchTechnicians = async () => {
       try {
         const techData = await api.getTechnicians()
-        console.log("Fetched technicians:", techData) // 👈 log here
+
         setTechnicians(techData)
       } catch (error) {
         console.error("Error fetching technicians:", error)
@@ -41,27 +93,48 @@ export default function ReportsPage() {
     fetchTechnicians()
   }, [api])
 
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true)
 
-  const generateReport = async () => {
-    setLoading(true)
-    try {
-      const params = {
-        from: format(dateRange.from, "yyyy-MM-dd"),
-        to: format(dateRange.to, "yyyy-MM-dd"),
-        status: status !== "all" ? status : undefined,
-        assignedTo: technician !== "all" ? technician : undefined,
-        type: reportType,
+      try {
+        const params: ReportParams = {
+          from: range.from.toISOString().split("T")[0],
+          to: range.to.toISOString().split("T")[0],
+        }
+
+        if (status !== "all") params.status = status
+        if (technician !== "all") params.technicianId = technician
+
+        const response = await getReports(params)
+        setReportData(response)
+      } catch (error) {
+        console.error("Failed to fetch reports", error)
+      } finally {
+        setLoading(false)
       }
-
-      const data = await api.getReports(params)
-      setReportData(data)
-    } catch (error) {
-      console.error("Error generating report:", error)
-    } finally {
-      setLoading(false)
     }
+
+    fetchData()
+  }, [range, status, technician, getReports])
+
+  const handleGenerateReport = () => {
+    setType({ technicianId: technician !== "all" ? technician : undefined }) // set technicianId
+    setRange(dateRange) // trigger range update
   }
 
+  useEffect(() => {
+    const fetchSummary = async () => {
+      try {
+        const data = await getAnalyticsSummary()
+        setSummary(data)
+      } catch (error) {
+        console.error("Error fetching analytics summary", error)
+      }
+    }
+
+    fetchSummary()
+  }, [getAnalyticsSummary])
   const downloadReport = () => {
     // In a real app, this would generate a CSV or PDF
     alert("Report download functionality would be implemented here")
@@ -90,9 +163,7 @@ export default function ReportsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="tickets">Ticket Report</SelectItem>
-                    <SelectItem value="technicians">Technician Performance</SelectItem>
-                    <SelectItem value="customers">Customer Report</SelectItem>
-                    <SelectItem value="resolution">Resolution Time Analysis</SelectItem>
+
                   </SelectContent>
                 </Select>
               </div>
@@ -177,7 +248,7 @@ export default function ReportsPage() {
                 <Download className="mr-2 h-4 w-4" />
                 Download Report
               </Button>
-              <Button onClick={generateReport} disabled={loading}>
+              <Button onClick={handleGenerateReport} disabled={loading}>
                 {loading ? "Generating..." : "Generate Report"}
               </Button>
             </div>
@@ -195,55 +266,31 @@ export default function ReportsPage() {
             <TabsContent value="table">
               <Card>
                 <CardHeader>
-                  <CardTitle>Report Results</CardTitle>
-                  <CardDescription>
-                    Showing results for {format(dateRange.from, "LLL dd, y")} to {format(dateRange.to, "LLL dd, y")}
-                  </CardDescription>
+                  <CardTitle>Ticket Report</CardTitle>
+                  <CardDescription>Showing {reportData?.total || 0} tickets</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="rounded-md border">
-                    <table className="min-w-full divide-y divide-border">
+                  <div className="overflow-x-auto">
+                    <table className="min-w-full table-auto text-sm">
                       <thead>
-                        <tr>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            ID
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Subject
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Status
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Assigned To
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Created
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Resolved
-                          </th>
-                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Resolution Time
-                          </th>
+                        <tr className="text-left border-b">
+                          <th className="p-2">Title</th>
+                          <th className="p-2">Customer</th>
+                          <th className="p-2">Assigned To</th>
+                          <th className="p-2">Status</th>
+                          <th className="p-2">Priority</th>
+                          <th className="p-2">Created At</th>
                         </tr>
                       </thead>
-                      <tbody className="bg-background divide-y divide-border">
-                        {reportData.tickets?.map((ticket: any) => (
-                          <tr key={ticket.id}>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{ticket.id}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">{ticket.subject}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">{ticket.status}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">{ticket.assignedTo || "Unassigned"}</td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {new Date(ticket.createdAt).toLocaleDateString()}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {ticket.resolvedAt ? new Date(ticket.resolvedAt).toLocaleDateString() : "N/A"}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                              {ticket.resolutionTime ? `${ticket.resolutionTime.toFixed(1)}h` : "N/A"}
-                            </td>
+                      <tbody>
+                        {reportData?.tickets.map((ticket) => (
+                          <tr key={ticket._id} className="border-b hover:bg-muted/50">
+                            <td className="p-2">{ticket.title}</td>
+                            <td className="p-2">{ticket.customer.name}</td>
+                            <td className="p-2">{ticket.assignedTo?.name || "Unassigned"}</td>
+                            <td className="p-2 capitalize">{ticket.status}</td>
+                            <td className="p-2 capitalize">{ticket.priority}</td>
+                            <td className="p-2">{format(new Date(ticket.createdAt), "PPpp")}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -253,43 +300,11 @@ export default function ReportsPage() {
               </Card>
             </TabsContent>
 
+
             <TabsContent value="chart">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Tickets by Status</CardTitle>
-                    <CardDescription>Distribution of tickets by status</CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[300px] flex items-center justify-center">
-                    <div className="w-full h-full flex items-center justify-center">
-                      <PieChart className="h-16 w-16 text-muted-foreground/50" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Resolution Time Trend</CardTitle>
-                    <CardDescription>Average resolution time over the period</CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[300px] flex items-center justify-center">
-                    <div className="w-full h-full flex items-center justify-center">
-                      <LineChart className="h-16 w-16 text-muted-foreground/50" />
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="lg:col-span-2">
-                  <CardHeader>
-                    <CardTitle>Tickets by Technician</CardTitle>
-                    <CardDescription>Number of tickets handled by each technician</CardDescription>
-                  </CardHeader>
-                  <CardContent className="h-[300px] flex items-center justify-center">
-                    <div className="w-full h-full flex items-center justify-center">
-                      <BarChart2 className="h-16 w-16 text-muted-foreground/50" />
-                    </div>
-                  </CardContent>
-                </Card>
+                <TicketStatusChart />
+                <TechnicianPerformanceChart />
               </div>
             </TabsContent>
 
@@ -303,53 +318,28 @@ export default function ReportsPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <div className="p-4 border rounded-md">
                       <div className="text-sm font-medium text-muted-foreground">Total Tickets</div>
-                      <div className="text-2xl font-bold mt-2">{reportData.summary?.totalTickets || 0}</div>
+                      <div className="text-2xl font-bold mt-2">{summary?.totalTickets ?? 0}</div>
                     </div>
                     <div className="p-4 border rounded-md">
-                      <div className="text-sm font-medium text-muted-foreground">Average Resolution Time</div>
-                      <div className="text-2xl font-bold mt-2">
-                        {reportData.summary?.averageResolutionTime?.toFixed(1) || 0}h
-                      </div>
+                      <div className="text-sm font-medium text-muted-foreground">Open Tickets</div>
+                      <div className="text-2xl font-bold mt-2">{summary?.openTickets ?? 0}</div>
                     </div>
                     <div className="p-4 border rounded-md">
-                      <div className="text-sm font-medium text-muted-foreground">Resolution Rate</div>
-                      <div className="text-2xl font-bold mt-2">
-                        {reportData.summary?.resolutionRate?.toFixed(1) || 0}%
-                      </div>
+                      <div className="text-sm font-medium text-muted-foreground">In Progress</div>
+                      <div className="text-2xl font-bold mt-2">{summary?.inProgressTickets ?? 0}</div>
                     </div>
-                  </div>
-
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-4">Key Insights</h3>
-                    <ul className="space-y-2">
-                      <li className="flex items-start">
-                        <div className="h-6 w-6 rounded-full bg-green-100 text-green-800 flex items-center justify-center mr-2 text-xs">
-                          +
-                        </div>
-                        <span>
-                          Resolution time has improved by{" "}
-                          {reportData.insights?.resolutionTimeImprovement?.toFixed(1) || 0}% compared to previous period
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="h-6 w-6 rounded-full bg-yellow-100 text-yellow-800 flex items-center justify-center mr-2 text-xs">
-                          !
-                        </div>
-                        <span>
-                          {reportData.insights?.highVolumeCategory || "Hardware"} issues represent{" "}
-                          {reportData.insights?.highVolumeCategoryPercentage?.toFixed(1) || 0}% of all tickets
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <div className="h-6 w-6 rounded-full bg-blue-100 text-blue-800 flex items-center justify-center mr-2 text-xs">
-                          i
-                        </div>
-                        <span>
-                          Top performing technician: {reportData.insights?.topPerformer || "Alex Johnson"} with an
-                          average resolution time of {reportData.insights?.topPerformerTime?.toFixed(1) || 0}h
-                        </span>
-                      </li>
-                    </ul>
+                    <div className="p-4 border rounded-md">
+                      <div className="text-sm font-medium text-muted-foreground">Closed Tickets</div>
+                      <div className="text-2xl font-bold mt-2">{summary?.closedTickets ?? 0}</div>
+                    </div>
+                    <div className="p-4 border rounded-md">
+                      <div className="text-sm font-medium text-muted-foreground">Total Technicians</div>
+                      <div className="text-2xl font-bold mt-2">{summary?.totalTechnicians ?? 0}</div>
+                    </div>
+                    <div className="p-4 border rounded-md">
+                      <div className="text-sm font-medium text-muted-foreground">Total Staff</div>
+                      <div className="text-2xl font-bold mt-2">{summary?.totalStaff ?? 0}</div>
+                    </div>
                   </div>
                 </CardContent>
               </Card>

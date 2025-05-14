@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { useApi } from "@/contexts/api-context"
-import { toast } from 'react-toastify';
+import { toast } from 'react-toastify'
 import { useRouter } from "next/navigation"
+
 
 type Technician = {
   _id: string
@@ -33,7 +34,6 @@ type TicketPayload = {
 
 const CreateTicketModal = () => {
   const router = useRouter()
-
   const [open, setOpen] = useState(false)
   const [formData, setFormData] = useState({
     title: '',
@@ -47,11 +47,12 @@ const CreateTicketModal = () => {
   })
 
   const [technicians, setTechnicians] = useState<Technician[]>([])
-  const [loading, setLoading] = useState(true)
+  const [emailSuggestions, setEmailSuggestions] = useState<string[]>([])
   const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string>("")
+  const [loading, setLoading] = useState(true)
 
   const { getTechnicians, createTicket } = useApi()
+  const { fetchCustomerEmails, getCustomerDetailsByEmail } = useApi()
 
   useEffect(() => {
     const fetchTechnicians = async () => {
@@ -59,21 +60,39 @@ const CreateTicketModal = () => {
         setLoading(true)
         const data: Technician[] = await getTechnicians()
         setTechnicians(data)
-        setError("")
       } catch (err) {
         console.error("Failed to fetch technicians:", err)
-        setError("Failed to load technicians. Please try again later.")
       } finally {
         setLoading(false)
       }
     }
 
+    const loadCustomerEmails = async () => {
+      const emails = await fetchCustomerEmails()
+      setEmailSuggestions(emails)
+    }
+
     fetchTechnicians()
-  }, [getTechnicians])
+    loadCustomerEmails()
+  }, [getTechnicians, fetchCustomerEmails])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData({ ...formData, [name]: value })
+  }
+
+  const handleEmailBlur = async () => {
+    const selectedEmail = formData.email.trim()
+    if (!selectedEmail) return
+
+    const details = await getCustomerDetailsByEmail(selectedEmail)
+    if (details) {
+      setFormData((prev) => ({
+        ...prev,
+        name: details.name,
+        phone: details.phone,
+      }))
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -94,7 +113,7 @@ const CreateTicketModal = () => {
     }
 
     try {
-      const res = await createTicket(ticketData)
+      await createTicket(ticketData)
       toast.success('Ticket created successfully!')
       setOpen(false)
       setFormData({
@@ -171,6 +190,7 @@ const CreateTicketModal = () => {
               name="assignedTo"
               value={formData.assignedTo}
               onChange={handleChange}
+              required
               className="w-full border rounded px-3 py-2"
             >
               <option value="">Select Technician</option>
@@ -182,19 +202,43 @@ const CreateTicketModal = () => {
             </select>
           </div>
           <div>
-            <Label htmlFor="name">Customer Name</Label>
-            <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
-          </div>
-          <div>
             <Label htmlFor="email">Customer Email</Label>
-            <Input
-              type="email"
+            <select
               id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
+              onBlur={handleEmailBlur}
+              required
+              className="w-full border rounded px-3 py-2"
+            >
+              <option value="">Select Email</option>
+              {emailSuggestions.map((email) => (
+                <option key={email} value={email}>
+                  {email}
+                </option>
+              ))}
+            </select>
+          </div>
+          {/* <div>
+            <Label htmlFor="email">Customer Email</Label>
+            <select
+              id="email"
+              name="email"
+              value={formData.email}
+              onChange={handleChange}
+              onBlur={handleEmailBlur}
               required
             />
+            <option id="email-suggestions">
+              {emailSuggestions.map((email) => (
+                <option key={email} value={email} />
+              ))}
+            </option>
+          </div> */}
+          <div>
+            <Label htmlFor="name">Customer Name</Label>
+            <Input id="name" name="name" value={formData.name} onChange={handleChange} required />
           </div>
           <div>
             <Label htmlFor="phone">Customer Phone</Label>

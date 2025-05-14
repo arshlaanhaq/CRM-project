@@ -132,12 +132,12 @@ const handleSubmit = async (e: React.FormEvent) => {
 
           <CardFooter className="flex justify-center border-t p-6">
             <div className="text-center text-sm">
-              New user?{" "}
+               Customer?{" "}
               <Link
               href="/customer-complaints"
                 className="text-blue-600 hover:underline"
               >
-                Create an account
+                Create an Complaint
               </Link>
             </div>
 

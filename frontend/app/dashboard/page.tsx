@@ -288,7 +288,7 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">New Complaints</CardTitle>
+              <CardTitle className="text-sm font-medium">Total Complaints</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">

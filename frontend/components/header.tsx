@@ -51,7 +51,6 @@ export default function Header() {
     { name: "Tickets", href: "/tickets", icon: <Ticket className="h-5 w-5 mr-2" /> },
     { name: "Technicians", href: "/technicians", icon: <Users className="h-5 w-5 mr-2" /> },
     { name: "Staff", href: "/staff", icon: <UserCog className="h-5 w-5 mr-2" /> },
-    { name: "Technician Reports", href: "/technician-reports", icon: <FileText className="h-5 w-5 mr-2" /> },
     { name: "Reports", href: "/reports", icon: <BarChart2 className="h-5 w-5 mr-2" /> },
     { name: "Complaints", href: "/complaints", icon: <AlertTriangle className="h-5 w-5 mr-2" /> },
   ]
@@ -60,7 +59,6 @@ export default function Header() {
     { name: "Staff Dashboard", href: "/staff-dashboard", icon: <Home className="h-5 w-5 mr-2" /> },
     { name: "Tickets", href: "/tickets", icon: <Ticket className="h-5 w-5 mr-2" /> },
     { name: "Technicians", href: "/technicians", icon: <Users className="h-5 w-5 mr-2" /> },
-    { name: "Technician Reports", href: "/technician-reports", icon: <FileText className="h-5 w-5 mr-2" /> },
     { name: "Complaints", href: "/complaints", icon: <AlertTriangle className="h-5 w-5 mr-2" /> },
   ]
 
@@ -115,11 +113,11 @@ export default function Header() {
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuLabel> {userRole && (
-                  <Badge variant="outline" className="ml-2 text-xs border-blue-800 text-blue-800">
+              <DropdownMenuLabel> 
+                  <Badge variant="outline" className=" border-blue-800 text-blue-800">
                     {userRole}
                   </Badge>
-                )}</DropdownMenuLabel>
+                </DropdownMenuLabel>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
                 <Link href={`/${userRole}/profile`}>Profile</Link>

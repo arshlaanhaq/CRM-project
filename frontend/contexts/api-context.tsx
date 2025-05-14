@@ -13,6 +13,13 @@ const getAuthHeaders = () => {
 // Types
 // ======================
 // State types for the Forgot Password flow
+interface CustomerDetails {
+  name: string;
+  phone: string;
+}
+
+
+
 interface ForgotPasswordState {
   email: string;
   loading: boolean;
@@ -242,6 +249,8 @@ interface ApiContextType {
   getComplaintById: (id: string) => Promise<CustomerComplaint>;
   updateComplaintStatus: (id: string, data: UpdateComplaintStatusPayload) => Promise<CustomerComplaint>;
   deleteComplaint: (id: string) => Promise<void>;
+   fetchCustomerEmails: () => Promise<string[]>;
+  getCustomerDetailsByEmail: (email: string) => Promise<CustomerDetails | null>;
 }
 
 const ApiContext = createContext<ApiContextType | null>(null);
@@ -301,7 +310,27 @@ export const ApiProvider = ({ children }: { children: ReactNode }) => {
       dispatch({ type: actionTypes.SET_LOADING, payload: false });
     }
   };
+  const fetchCustomerEmails = async (): Promise<string[]> => {
+    try {
+      const response = await axios.get('/customer-complaints/emails', {
+      
+      });
+      return response.data.emails || [];
+    } catch (error) {
+      console.error('Error fetching emails:', error);
+      return [];
+    }
+  };
 
+  const getCustomerDetailsByEmail = async (email: string): Promise<CustomerDetails | null> => {
+    try {
+      const response = await axios.get(`/customer-complaints/customer-details/${email}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching customer details:', error);
+      return null;
+    }
+  };
 
   // const registerCustomer = async (data: RegisterPayload) => {
   //   const res = await axios.post("/auth/register-customer", data);
@@ -493,7 +522,9 @@ export const ApiProvider = ({ children }: { children: ReactNode }) => {
         state,
         dispatch,
         forgotPassword,
-        resetPassword
+        resetPassword,
+        fetchCustomerEmails,
+        getCustomerDetailsByEmail
       }}
     >
       {children}

@@ -182,8 +182,8 @@ const filteredComplaints = complaints
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">New Complaints</CardTitle>
               </CardHeader>
@@ -194,7 +194,7 @@ const filteredComplaints = complaints
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">Requires attention</p>
               </CardContent>
-            </Card>
+            </Card> */}
 
             <Card>
               <CardHeader className="pb-2">
@@ -263,24 +263,26 @@ const filteredComplaints = complaints
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Complaint ID</TableHead>
                 <TableHead>Customer Name</TableHead>
+                <TableHead>Complaint Email</TableHead>
                 <TableHead>Product Name</TableHead>
+                <TableHead>Serial Number</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead>Assigned To</TableHead>
+                <TableHead>Description</TableHead>
                 <TableHead>Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filteredComplaints.map((complaint)=> (
                 <TableRow key={complaint._id}>
-                  <TableCell>{complaint._id}</TableCell>
                   <TableCell>{complaint.name}</TableCell>
+                   <TableCell>{complaint.email}</TableCell>
                   <TableCell>{complaint.productName}</TableCell>
+                  <TableCell>{complaint.serialNumber}</TableCell>
                   <TableCell>
                     <StatusBadge status={complaint.status || "Pending"} />
                   </TableCell>
-                  <TableCell>{complaint.assignedTo || "Unassigned"}</TableCell>
+                  <TableCell>{complaint.issueDescription}</TableCell>
                   <TableCell>
                     <DropdownMenu>
                       <DropdownMenuTrigger asChild>
