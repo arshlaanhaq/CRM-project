@@ -19,7 +19,7 @@ import { Badge } from "@/components/ui/badge"
 
 export default function StaffDashboardPage() {
   const api = useApi()
-  const {getAllComplaints} = useApi()
+  const { getAllComplaints } = useApi()
   const router = useRouter()
   const [userRole, setUserRole] = useState<string>("")
   const [complaints, setComplaints] = useState([])
@@ -284,8 +284,8 @@ export default function StaffDashboardPage() {
 
           </TabsList> */}
           <TabsContent value="overview">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-              <Card>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle>Recent Tickets</CardTitle>
                   <CardDescription>Latest customer support tickets</CardDescription>

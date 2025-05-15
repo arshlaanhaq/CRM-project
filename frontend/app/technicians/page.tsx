@@ -3,16 +3,14 @@
 import { useEffect, useState } from "react"
 import LayoutWithSidebar from "@/components/layout-with-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertCircle, CheckCircle, Clock, Users } from "lucide-react"
-import TechnicianDashboard from "@/components/technician-dashboard"
-import RoleGuard from "@/components/role-guard"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { AlertCircle, CheckCircle, Users } from "lucide-react"
 import TechnicianPerformanceChart from "@/components/technician-performance-chart"
+import RoleGuard from "@/components/role-guard"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
-import { useApi } from "@/contexts/api-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { useApi } from "@/contexts/api-context"
 
 type Technician = {
   _id: string
@@ -26,7 +24,7 @@ type Technician = {
 export default function TechniciansPage() {
   const api = useApi()
   const { getTechnicians } = useApi()
-   const [userRole, setUserRole] = useState<string | null>(null)
+  const [userRole, setUserRole] = useState<string | null>(null)
   const [technicians, setTechnicians] = useState<Technician[]>([])
   const [tickets, setTickets] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
@@ -39,6 +37,10 @@ export default function TechniciansPage() {
     resolved: 0,
     averageResolutionTime: 0,
   })
+  function isUserActive(status?: string): boolean {
+  return status?.toLowerCase() === "active"
+}
+
 
   useEffect(() => {
     const fetchTechnicians = async () => {
@@ -78,7 +80,6 @@ export default function TechniciansPage() {
           averageResolutionTime: 2.5, // Placeholder
         })
 
-        // Map ticket counts into technicians
         setTechnicians((prevTechs) =>
           prevTechs.map((tech) => {
             const assignedCount = ticketData.filter(
@@ -106,28 +107,23 @@ export default function TechniciansPage() {
 
     fetchData()
   }, [api])
-    useEffect(() => {
+
+  useEffect(() => {
     setUserRole(localStorage.getItem("userRole"))
   }, [])
 
-  // If user role is not loaded yet, show nothing
-  if (userRole === null) {
-    return null
-  }
-
-  // Different settings view for technicians vs admins
-  const isAdmin = userRole === "admin"
+  if (userRole === null) return null
 
   return (
     <RoleGuard allowedRoles={["admin", "staff"]}>
       <LayoutWithSidebar>
-        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
           <h1 className="text-2xl font-bold">Technician Dashboard</h1>
-             {userRole === 'admin' && (
-        <Link href="/settings/add-technician">
-          <Button className="mt-2 md:mt-0">Add Technician</Button>
-        </Link>
-      )}
+          {userRole === "admin" && (
+            <Link href="/settings/add-technician">
+              <Button>Add Technician</Button>
+            </Link>
+          )}
         </div>
 
         {error && (
@@ -137,75 +133,60 @@ export default function TechniciansPage() {
           </Alert>
         )}
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div className="grid grid-cols-1  xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Active Technicians</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-start">
                 <Users className="h-5 w-5 text-muted-foreground mr-2" />
                 <span className="text-2xl font-bold">
                   {loading ? "Loading..." : `${activeTechnicians}/${totalTechnicians}`}
                 </span>
-                <p className="text-xs text-muted-foreground mt-1">
-                  {loading ? "" : `${totalTechnicians - activeTechnicians} technicians currently offline`}
-                </p>
               </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {loading ? "" : `${totalTechnicians - activeTechnicians} technicians currently offline`}
+              </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Tickets Resolved </CardTitle>
+              <CardTitle className="text-sm font-medium">Tickets Resolved</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
                 <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
                 <span className="text-2xl font-bold">{stats.resolved}</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Average resolution: {stats.averageResolutionTime}h</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Average resolution: {stats.averageResolutionTime}h
+              </p>
             </CardContent>
           </Card>
-
-          {/* <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Average Resolution Time</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-center">
-                <Clock className="h-5 w-5 text-muted-foreground mr-2" />
-                <span className="text-2xl font-bold"> {stats.averageResolutionTime}h</span>
-              </div>
-              <p className="text-xs text-muted-foreground mt-1">-0.5h from last week</p>
-            </CardContent>
-          </Card> */}
         </div>
 
         <Tabs defaultValue="all-technicians">
-          {/* <TabsList className="mb-4">
-           
-          </TabsList> */}
-
           <TabsContent value="all-technicians">
-            <div className="rounded-md border">
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-6">
               <div className="p-4">
-                <h2 className="text-xl font-semibold mb-2">All Technicians</h2>
+                <h2 className="text-lg sm:text-xl font-semibold mb-4">All Technicians</h2>
 
                 {loading ? (
-                  <div className="py-8 text-center">Loading technicians data...</div>
+                  <div className="py-8 text-center text-sm sm:text-base">Loading technicians data...</div>
                 ) : error ? (
-                  <div className="py-8 text-center text-red-500">{error}</div>
+                  <div className="py-8 text-center text-red-500 text-sm sm:text-base">{error}</div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
+                  <div className="w-full overflow-x-auto">
+                    <table className="min-w-full text-sm sm:text-base">
                       <thead>
                         <tr className="border-b">
                           <th className="text-left p-2">Name</th>
                           <th className="text-left p-2">Email</th>
                           <th className="text-left p-2">Status</th>
-                          <th className="text-left p-2">Tickets Assigned</th>
-                          <th className="text-left p-2">Tickets Resolved</th>
+                          <th className="text-left p-2 whitespace-nowrap">Tickets Assigned</th>
+                          <th className="text-left p-2 whitespace-nowrap">Tickets Resolved</th>
                           <th className="text-left p-2">Actions</th>
                         </tr>
                       </thead>
@@ -218,27 +199,25 @@ export default function TechniciansPage() {
                           </tr>
                         ) : (
                           technicians.map((tech, index) => (
-                            <tr key={tech?._id || `tech-${index}`} className="border-b hover:bg-muted/50">
+                            <tr key={tech._id || `tech-${index}`} className="border-b hover:bg-muted/50">
                               <td className="p-2">{tech.name}</td>
                               <td className="p-2">{tech.email}</td>
                               <td className="p-2">
                                 <span
                                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tech.status === "inactive"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-green-100 text-green-800"
+                                      ? "bg-red-100 text-red-800"
+                                      : "bg-green-100 text-green-800"
                                     }`}
                                 >
-                                  {tech.status
-                                    ? tech.status.charAt(0).toUpperCase() + tech.status.slice(1)
-                                    : "Active"}
+                                   {isUserActive(tech.status) ? "Active" : "Inactive"}
                                 </span>
                               </td>
-                              <td className="p-2">{tech.ticketsAssigned ?? 0}</td>
-                              <td className="p-2">{tech.ticketsResolved ?? 0}</td>
+                              <td className="p-2 text-center">{tech.ticketsAssigned ?? 0}</td>
+                              <td className="p-2 text-center">{tech.ticketsResolved ?? 0}</td>
                               <td className="p-2">
                                 <Link href={`/technicians/${tech._id}`}>
                                   <Button variant="outline" size="sm">
-                                    View Details
+                                    View
                                   </Button>
                                 </Link>
                               </td>
@@ -253,7 +232,7 @@ export default function TechniciansPage() {
             </div>
           </TabsContent>
 
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
             <TechnicianPerformanceChart />
           </div>
         </Tabs>

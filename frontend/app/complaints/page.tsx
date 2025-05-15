@@ -86,35 +86,35 @@ export default function ComplaintsPage() {
   }, [])
 
   // Filter complaints based on search term and filters
-// Filter complaints based on search term and filters, and sort by createdAt
-const filteredComplaints = complaints
-  .filter((complaint) => {
-    const matchesSearch =
-      searchTerm === "" ||
-      complaint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      complaint.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      complaint._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      complaint.issueDescription.toLowerCase().includes(searchTerm.toLowerCase())
+  // Filter complaints based on search term and filters, and sort by createdAt
+  const filteredComplaints = complaints
+    .filter((complaint) => {
+      const matchesSearch =
+        searchTerm === "" ||
+        complaint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        complaint.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        complaint._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        complaint.issueDescription.toLowerCase().includes(searchTerm.toLowerCase())
 
-    const matchesStatus = statusFilter === "all" || complaint.status === statusFilter
+      const matchesStatus = statusFilter === "all" || complaint.status === statusFilter
 
-    let matchesDate = true
-    if (dateFilter === "last-week") {
-      const oneWeekAgo = new Date()
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-      matchesDate = new Date(complaint.createdAt!) >= oneWeekAgo
-    } else if (dateFilter === "last-month") {
-      const oneMonthAgo = new Date()
-      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
-      matchesDate = new Date(complaint.createdAt!) >= oneMonthAgo
-    }
+      let matchesDate = true
+      if (dateFilter === "last-week") {
+        const oneWeekAgo = new Date()
+        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
+        matchesDate = new Date(complaint.createdAt!) >= oneWeekAgo
+      } else if (dateFilter === "last-month") {
+        const oneMonthAgo = new Date()
+        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
+        matchesDate = new Date(complaint.createdAt!) >= oneMonthAgo
+      }
 
-    return matchesSearch && matchesStatus && matchesDate
-  })
-  .sort((a, b) => {
-    // Sort complaints by createdAt in descending order (newest first)
-    return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-  })
+      return matchesSearch && matchesStatus && matchesDate
+    })
+    .sort((a, b) => {
+      // Sort complaints by createdAt in descending order (newest first)
+      return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
+    })
 
   const pendingCount = complaints.filter((c) => c.status === "Pending").length;
   const ticketCreatedCount = complaints.filter((c) => c.status === "Ticket Created").length;
@@ -178,11 +178,11 @@ const filteredComplaints = complaints
               <h1 className="text-2xl font-bold tracking-tight">Customer Complaints</h1>
               <p className="text-muted-foreground">Manage and resolve customer complaints</p>
             </div>
-           
+
           </div>
 
           {/* Summary Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1  xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-2 gap-6 mb-6">
             {/* <Card>
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium">New Complaints</CardTitle>
@@ -260,55 +260,63 @@ const filteredComplaints = complaints
           </div>
 
           {/* Complaints Table */}
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Customer Name</TableHead>
-                <TableHead>Complaint Email</TableHead>
-                <TableHead>Product Name</TableHead>
-                <TableHead>Serial Number</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Description</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {filteredComplaints.map((complaint)=> (
-                <TableRow key={complaint._id}>
-                  <TableCell>{complaint.name}</TableCell>
-                   <TableCell>{complaint.email}</TableCell>
-                  <TableCell>{complaint.productName}</TableCell>
-                  <TableCell>{complaint.serialNumber}</TableCell>
-                  <TableCell>
-                    <StatusBadge status={complaint.status || "Pending"} />
-                  </TableCell>
-                  <TableCell>{complaint.issueDescription}</TableCell>
-                  <TableCell>
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="outline" size="icon">
-                          <MoreHorizontal className="h-5 w-5" />
-                        </Button>
-                      </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end">
-                        <DropdownMenuItem onClick={() => handleViewComplaint(complaint._id!)}>
-                          View Complaint
-                        </DropdownMenuItem>
-                        <DropdownMenuItem onClick={() => handleDeleteComplaint(complaint._id!)}>
-                          Delete Complaint
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleAssignToStaff(complaint._id!, "staffIdHere")}
-                        >
-                          Assign to Staff
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    </DropdownMenu>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+          {/* Complaints Table Section */}
+          <div className="grid grid-cols-1 gap-6 mb-6">
+            <div className="p-4">
+              <h2 className="text-lg sm:text-xl font-semibold mb-4">All Complaints</h2>
+
+              {isLoading ? (
+                <div className="py-8 text-center text-sm sm:text-base">Loading complaints data...</div>
+              ) : error ? (
+                <div className="py-8 text-center text-red-500 text-sm sm:text-base">{error}</div>
+              ) : (
+                <div className="overflow-x-auto rounded-lg border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Customer Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Product</TableHead>
+                        <TableHead>Serial</TableHead>
+                        <TableHead>Status</TableHead>
+                        <TableHead>Description</TableHead>
+                        <TableHead>Date</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredComplaints.map((complaint) => (
+                        <TableRow key={complaint._id}>
+                          <TableCell>{complaint.name}</TableCell>
+                          <TableCell>{complaint.email}</TableCell>
+                          <TableCell>{complaint.productName}</TableCell>
+                          <TableCell>{complaint.serialNumber}</TableCell>
+                          <TableCell><StatusBadge status={complaint.status || "Pending"} /></TableCell>
+                          <TableCell className="max-w-[200px] truncate">{complaint.issueDescription}</TableCell>
+                          <TableCell>{formatDate(complaint.createdAt?.toString() || "")}</TableCell>
+                          <TableCell className="text-right">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon">
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                <DropdownMenuItem onClick={() => handleViewComplaint(complaint._id!)}>View</DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => handleDeleteComplaint(complaint._id!)}>Delete</DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              )}
+            </div>
+          </div>
+
           {isLoading && <p>Loading complaints...</p>}
           {error && <p>{error}</p>}
         </div>

@@ -110,7 +110,7 @@ export default function StaffPage() {
           </TabsList> */}
 
           <TabsContent value="all-staff">
-            <div className="rounded-md border">
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-6">
               <div className="p-4">
                 <h2 className="text-xl font-semibold mb-2">All Staff Members</h2>
                 {loading ? (

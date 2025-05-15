@@ -117,7 +117,7 @@ export default function DashboardPage() {
     const fetchData = async () => {
       try {
         // Fetch tickets assigned to the technician
-        const ticketData = await api.getMyTickets()
+        const ticketData = await api.getAllTickets()
         setTickets(ticketData)
 
         // Calculate stats

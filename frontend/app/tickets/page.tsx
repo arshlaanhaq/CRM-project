@@ -30,7 +30,7 @@ export default function TicketsPage() {
     createdAt: string
     updatedAt: string
   }
-  
+
 
   // Get user role from localStorage
   useEffect(() => {
@@ -77,7 +77,7 @@ export default function TicketsPage() {
       </div>
 
       <Tabs defaultValue="list">
-       
+
 
         <TabsContent value="list">
           <div className="flex flex-col md:flex-row gap-4 mb-6">
@@ -119,14 +119,19 @@ export default function TicketsPage() {
             </TabsList>
 
             <TabsContent value="all">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle>All Tickets</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <TicketList tickets={filteredTickets} loading={loading} />
-                </CardContent>
-              </Card>
+              <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-6">
+                <Card className="lg:col-span-2">
+                  <CardHeader>
+                    <CardTitle>All Tickets</CardTitle>
+
+                  </CardHeader>
+                  <CardContent>
+                    <TicketList tickets={filteredTickets} loading={loading} />
+                  </CardContent>
+                </Card>
+
+
+              </div>
             </TabsContent>
 
             <TabsContent value="open">
