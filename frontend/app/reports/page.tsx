@@ -337,7 +337,7 @@ export default function ReportsPage() {
                       <tbody>
                         {reportData?.tickets.map((ticket) => (
                           <tr key={ticket._id} className="border-b hover:bg-muted/50">
-                            <td className="p-2">{ticket.title}</td>
+                            <td className="p-2 max-w-[200px] truncate">{ticket.title}</td>
                             <td className="p-2">{ticket.customer.name}</td>
                             <td className="p-2">{ticket.assignedTo?.name || "Unassigned"}</td>
                             <td className="p-2">{getStatusBadge(ticket.status)}</td>

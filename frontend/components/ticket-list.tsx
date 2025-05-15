@@ -170,7 +170,7 @@ export default function TicketList({ tickets = [], loading = false, status }: Ti
             return (
               <TableRow key={uniqueKey}>
                 <TableCell className="font-medium">{formattedId}</TableCell>
-                <TableCell>{ticket.title}</TableCell>
+                <TableCell className="max-w-[200px] truncate">{ticket.title}</TableCell>
                 <TableCell>{ticket.customer?.name || "Unknown"}</TableCell>
                 <TableCell>{getStatusBadge(ticket.status)}</TableCell>
                 <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
