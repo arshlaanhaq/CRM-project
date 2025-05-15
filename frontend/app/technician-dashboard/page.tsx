@@ -116,7 +116,7 @@ export default function TechnicianDashboardPage() {
           <p className="text-muted-foreground">Manage your assigned tickets and track your performance</p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div className="grid grid-cols-1  xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Assigned Tickets</CardTitle>
@@ -165,15 +165,20 @@ export default function TechnicianDashboardPage() {
           </TabsList>
 
           <TabsContent value="assigned">
-            <Card>
-              <CardHeader>
-                <CardTitle>Assigned Tickets</CardTitle>
-                <CardDescription>Tickets that require your attention</CardDescription>
-              </CardHeader>
-              <CardContent>
-                 <TicketList tickets={filteredTickets} loading={loading} />
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle>Recent Tickets</CardTitle>
+                  <CardDescription>Latest customer support tickets</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <TicketList tickets={filteredTickets} loading={loading} />
                 </CardContent>
-            </Card>
+              </Card>
+
+
+            </div>
+
           </TabsContent>
 
           <TabsContent value="in-progress">
