@@ -322,7 +322,7 @@ export default function ReportsPage() {
                   <CardDescription>Showing {reportData?.total || 0} tickets</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="w-full overflow-x-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 ">
+                  <div className="w-full overflow-x-auto grid grid-cols-1 lg:grid-cols-1 gap-6 mb-6 ">
                     <table className="min-w-[600px] w-full table-auto text-sm">
                       <thead>
                         <tr className="text-left border-b">
