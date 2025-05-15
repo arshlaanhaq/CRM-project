@@ -1,5 +1,5 @@
 "use client"
-
+import { exportToExcel } from "@/utils/exportToExcel"
 import { useState, useEffect } from "react"
 import LayoutWithSidebar from "@/components/layout-with-sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
@@ -14,6 +14,7 @@ import TicketStatusChart from "@/components/ticket-status-chart"
 import { cn } from "@/lib/utils"
 import RoleGuard from "@/components/role-guard"
 import { useApi } from "@/contexts/api-context"
+import { Badge } from "@/components/ui/badge"
 import TechnicianPerformanceChart from "@/components/technician-performance-chart"
 interface ReportParams {
   from?: string;
@@ -53,6 +54,7 @@ interface Ticket {
 export default function ReportsPage() {
   const api = useApi()
   const [loading, setLoading] = useState(true)
+  const [clicked, setClicked] = useState(false); // track if clicked once
   const [reportType, setReportType] = useState("tickets")
   const [dateRange, setDateRange] = useState({
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
@@ -93,35 +95,49 @@ export default function ReportsPage() {
     fetchTechnicians()
   }, [api])
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true)
+  const handleGenerateReport = async () => {
+    setClicked(true);   // mark clicked
+    setLoading(true);   // start loading
+    // Update the state for filters if you want:
+    setType({ technicianId: technician !== "all" ? technician : undefined })
+    setRange(dateRange)
 
-      try {
-        const params: ReportParams = {
-          from: range.from.toISOString().split("T")[0],
-          to: range.to.toISOString().split("T")[0],
-        }
-
-        if (status !== "all") params.status = status
-        if (technician !== "all") params.technicianId = technician
-
-        const response = await getReports(params)
-        setReportData(response)
-      } catch (error) {
-        console.error("Failed to fetch reports", error)
-      } finally {
-        setLoading(false)
+    try {
+      const params: ReportParams = {
+        from: dateRange.from.toISOString().split("T")[0],
+        to: dateRange.to.toISOString().split("T")[0],
       }
+
+      if (status !== "all") params.status = status
+      if (technician !== "all") params.technicianId = technician
+
+      const response = await getReports(params)
+      console.log(response)
+      setReportData(response)
+    } catch (error) {
+      console.error("Failed to fetch reports", error)
+    } finally {
+      setLoading(false)
     }
-
-    fetchData()
-  }, [range, status, technician, getReports])
-
-  const handleGenerateReport = () => {
-    setType({ technicianId: technician !== "all" ? technician : undefined }) // set technicianId
-    setRange(dateRange) // trigger range update
   }
+  const handleDownload = () => {
+    if (Array.isArray(reportData.tickets) && reportData.tickets.length > 0) {
+      const simplifiedData = reportData.tickets.map((ticket: any) => ({
+        Title: ticket.title,
+        Customer: ticket.customer?.name || "N/A",
+        "Assigned To": ticket.assignedTo?.name || "Unassigned",
+        Status: ticket.status,
+        Priority: ticket.priority,
+        "Created At": new Date(ticket.createdAt).toLocaleString(), // format as needed
+      }))
+
+      exportToExcel(simplifiedData, "report.xlsx")
+    } else {
+      console.error("Invalid reportData structure", reportData)
+    }
+  }
+
+
 
   useEffect(() => {
     const fetchSummary = async () => {
@@ -139,7 +155,35 @@ export default function ReportsPage() {
     // In a real app, this would generate a CSV or PDF
     alert("Report download functionality would be implemented here")
   }
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "open":
+        return <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">Open</Badge>
+      case "in-progress":
+        return <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">In Progress</Badge>
+      case "resolved":
+        return <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">Resolved</Badge>
+      case "closed":
+        return <Badge variant="outline" className="bg-gray-50 text-gray-700 border-gray-200">Closed</Badge>
+      default:
+        return <Badge variant="outline">Unknown</Badge>
+    }
+  }
 
+  const getPriorityBadge = (priority: string) => {
+    switch (priority) {
+      case "urgent":
+        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Urgent</Badge>
+      case "high":
+        return <Badge className="bg-orange-100 text-orange-800 hover:bg-orange-100">High</Badge>
+      case "medium":
+        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Medium</Badge>
+      case "low":
+        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Low</Badge>
+      default:
+        return <Badge variant="outline">Unknown</Badge>
+    }
+  }
   return (
     <RoleGuard allowedRoles={["admin", "staff"]}>
       <LayoutWithSidebar>
@@ -147,14 +191,15 @@ export default function ReportsPage() {
           <h1 className="text-2xl font-bold">Reports</h1>
           <p className="text-muted-foreground">Generate and analyze system reports</p>
         </div>
-
         <Card className="mb-6">
           <CardHeader>
             <CardTitle>Report Parameters</CardTitle>
             <CardDescription>Configure the parameters for your report</CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Form Fields Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+              {/* Report Type */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Report Type</label>
                 <Select value={reportType} onValueChange={setReportType}>
@@ -163,11 +208,11 @@ export default function ReportsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="tickets">Ticket Report</SelectItem>
-
                   </SelectContent>
                 </Select>
               </div>
 
+              {/* Date Range */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Date Range</label>
                 <div className="grid gap-2">
@@ -177,7 +222,7 @@ export default function ReportsPage() {
                         variant="outline"
                         className={cn(
                           "w-full justify-start text-left font-normal",
-                          !dateRange && "text-muted-foreground",
+                          !dateRange && "text-muted-foreground"
                         )}
                       >
                         <CalendarIcon className="mr-2 h-4 w-4" />
@@ -208,6 +253,7 @@ export default function ReportsPage() {
                 </div>
               </div>
 
+              {/* Status */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Status</label>
                 <Select value={status} onValueChange={setStatus}>
@@ -224,6 +270,7 @@ export default function ReportsPage() {
                 </Select>
               </div>
 
+              {/* Technician */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Technician</label>
                 <Select value={technician} onValueChange={setTechnician}>
@@ -237,23 +284,28 @@ export default function ReportsPage() {
                         {tech.name}
                       </SelectItem>
                     ))}
-
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
-            <div className="mt-6 flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => downloadReport()} disabled={!reportData || loading}>
-                <Download className="mr-2 h-4 w-4" />
+            {/* Action Buttons */}
+            <div className="mt-6 flex flex-col sm:flex-row sm:justify-end gap-3">
+              <Button
+                variant="outline"
+                onClick={handleDownload}
+                loading={loading}
+              >
                 Download Report
               </Button>
-              <Button onClick={handleGenerateReport} disabled={loading}>
-                {loading ? "Generating..." : "Generate Report"}
+
+              <Button onClick={handleGenerateReport} loading={loading}>
+                {!clicked ? "Generate Report" : (loading ? "Generating..." : "Generate Report")}
               </Button>
             </div>
           </CardContent>
         </Card>
+
 
         {reportData && (
           <Tabs defaultValue="table" className="mb-6">
@@ -270,8 +322,8 @@ export default function ReportsPage() {
                   <CardDescription>Showing {reportData?.total || 0} tickets</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="overflow-x-auto">
-                    <table className="min-w-full table-auto text-sm">
+                  <div className="w-full overflow-x-auto grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6 ">
+                    <table className="min-w-[600px] w-full table-auto text-sm">
                       <thead>
                         <tr className="text-left border-b">
                           <th className="p-2">Title</th>
@@ -288,8 +340,8 @@ export default function ReportsPage() {
                             <td className="p-2">{ticket.title}</td>
                             <td className="p-2">{ticket.customer.name}</td>
                             <td className="p-2">{ticket.assignedTo?.name || "Unassigned"}</td>
-                            <td className="p-2 capitalize">{ticket.status}</td>
-                            <td className="p-2 capitalize">{ticket.priority}</td>
+                            <td className="p-2">{getStatusBadge(ticket.status)}</td>
+                            <td className="p-2">{getPriorityBadge(ticket.priority)}</td>
                             <td className="p-2">{format(new Date(ticket.createdAt), "PPpp")}</td>
                           </tr>
                         ))}
@@ -300,13 +352,13 @@ export default function ReportsPage() {
               </Card>
             </TabsContent>
 
-
             <TabsContent value="chart">
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <TicketStatusChart />
                 <TechnicianPerformanceChart />
               </div>
             </TabsContent>
+
 
             <TabsContent value="summary">
               <Card>
