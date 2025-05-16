@@ -51,7 +51,7 @@ export default function StaffDetailsPage() {
         const staffData = await getStaffById(id)
         console.log(staffData)
         setStaff(staffData)
-        
+
       } catch (err) {
         setError("Failed to fetch staff details")
       }
@@ -89,6 +89,7 @@ export default function StaffDetailsPage() {
           </button>
         </div>
       </div>,
+
       {
         // Keep the toast open until manually closed
         closeOnClick: false, // Prevent closing the toast on click
@@ -107,20 +108,28 @@ export default function StaffDetailsPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Link href={`/staff`}>
-            <Button variant="ghost" size="sm" className="mr-2">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link href="/staff">
+            <Button variant="ghost" size="sm" className="flex items-center gap-1">
+              <ArrowLeft className="h-4 w-4" />
+              Back
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold">Staff Details</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Staff Details</h1>
         </div>
-        <Button variant="destructive" onClick={handleDelete}>
+
+        <Button
+          variant="destructive"
+          onClick={handleDelete}
+          className="w-full sm:w-auto"
+        >
           <Trash2 className="h-4 w-4 mr-2" />
           Delete Staff
         </Button>
       </div>
+
+
 
       <Card className="w-full max-w-4xl mx-auto">
         <CardHeader>
