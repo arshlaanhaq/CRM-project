@@ -200,11 +200,11 @@ export default function TicketList({ tickets = [], loading = false, status }: Ti
                             Mark as Resolved
                           </DropdownMenuItem>
                         )}
-                        {userRole === "technician" && ticket.status !== "in-progress" && (
+                        {/* {userRole === "technician" && ticket.status !== "in-progress" && (
                           <DropdownMenuItem onClick={() => handleResolveTicket(ticket._id)}>
                             Mark as In-Progress
                           </DropdownMenuItem>
-                        )}
+                        )} */}
                         {userRole === "staff" && ticket.status !== "closed" && (
                           <DropdownMenuItem onClick={() => handleCloseTicket(ticket._id)}>
                             Close Ticket
