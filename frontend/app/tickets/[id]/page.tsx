@@ -44,7 +44,7 @@ export default function CustomerTicketDetail() {
       getTicketById(id as string)
 
         .then((data) => {
-          console.log(data)
+         
           setTicket(data);
           setLoading(false);
         })

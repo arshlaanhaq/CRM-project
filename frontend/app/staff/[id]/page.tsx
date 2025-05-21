@@ -49,7 +49,7 @@ export default function StaffDetailsPage() {
     const fetchStaff = async () => {
       try {
         const staffData = await getStaffById(id)
-        console.log(staffData)
+       
         setStaff(staffData)
 
       } catch (err) {

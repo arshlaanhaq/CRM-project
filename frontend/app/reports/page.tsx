@@ -112,7 +112,7 @@ export default function ReportsPage() {
       if (technician !== "all") params.technicianId = technician
 
       const response = await getReports(params)
-      console.log(response)
+     
       setReportData(response)
     } catch (error) {
       console.error("Failed to fetch reports", error)

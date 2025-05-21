@@ -75,7 +75,6 @@ export default function TechnicianDetailsPage() {
     const fetchTechnicianDetails = async () => {
       try {
         const { technician, assignedTickets } = await api.getTechnicianById(params.id as string)
-        console.log({ technician, assignedTickets })
         setTechnicianDetails({ technician, assignedTickets })
       } catch (error) {
         console.error("Error fetching technician details:", error)
