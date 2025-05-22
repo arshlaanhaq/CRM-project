@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
-import { Trash2} from "lucide-react"
+import { Trash2 } from "lucide-react"
 import {
   ArrowLeft,
   Mail,
@@ -75,7 +75,6 @@ export default function TechnicianDetailsPage() {
     const fetchTechnicianDetails = async () => {
       try {
         const { technician, assignedTickets } = await api.getTechnicianById(params.id as string)
-        console.log({ technician, assignedTickets })
         setTechnicianDetails({ technician, assignedTickets })
       } catch (error) {
         console.error("Error fetching technician details:", error)
@@ -188,24 +187,28 @@ export default function TechnicianDetailsPage() {
 
   return (
     <div className="container mx-auto p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="flex items-center space-x-4">
-          <Button variant="ghost" onClick={() => router.back()}>
-            <ArrowLeft className="h-4 w-4 mr-2" />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4 sm:gap-6">
+        {/* Back Button and Heading */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Button variant="ghost" onClick={() => router.back()} className="flex items-center gap-1">
+            <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <h1 className="text-2xl font-bold">Technician Details</h1>
+          <h1 className="text-xl sm:text-2xl font-bold">Technician Details</h1>
         </div>
-        <div className="flex space-x-2">
-          <Button variant="outline" onClick={() => router.push(`/tickets/new?technicianId=${technician.id}`)}>
-            Assign Ticket
-          </Button>
-          <Button onClick={handleDelete} className="bg-red-600 text-white">
-          <Trash2 className="h-4 w-4 mr-2" />
+
+        {/* Action Buttons */}
+        <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
+          <Button
+            onClick={handleDelete}
+            className="bg-red-600 text-white w-full sm:w-auto"
+          >
+            <Trash2 className="h-4 w-4 mr-2" />
             Delete Technician
           </Button>
         </div>
       </div>
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <Card className="lg:col-span-1">

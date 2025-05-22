@@ -86,13 +86,16 @@ export default function AssignTicketClient() {
   return (
     <LayoutWithSidebar>
       <div className="px-4 sm:px-6">
-        <div className="flex items-center mb-4 sm:mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-4">
           <Link href={`/dashboard`}>
-            <Button variant="ghost" size="sm" className="mr-2">
-              <ArrowLeft className="h-4 w-4 mr-1" /> Back
+            <Button variant="ghost" size="sm" className="flex items-center gap-1">
+              <ArrowLeft className="h-4 w-4" />
+              Back
             </Button>
           </Link>
-          <h1 className="text-xl sm:text-2xl font-bold">Assign Ticket #{id}</h1>
+          <h1 className="text-xl sm:text-2xl font-bold max-w-[300px] truncate">
+            Assign Ticket #{id}
+          </h1>
         </div>
 
         <Card>
@@ -105,7 +108,7 @@ export default function AssignTicketClient() {
             </CardHeader>
 
             <CardContent className="space-y-6">
-              <div className="space-y-2">
+              {/* <div className="space-y-2">
                 <Label>Filter by Expertise</Label>
                 <Select>
                   <SelectTrigger>
@@ -113,10 +116,10 @@ export default function AssignTicketClient() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All expertise</SelectItem>
-                    {/* Optional: dynamic filters */}
+                    Optional: dynamic filters
                   </SelectContent>
                 </Select>
-              </div>
+              </div> */}
 
               <div className="space-y-4">
                 <Label>Available Technicians</Label>
@@ -167,8 +170,8 @@ export default function AssignTicketClient() {
                             tech.workload! > 70
                               ? "text-red-500"
                               : tech.workload! > 50
-                              ? "text-yellow-500"
-                              : "text-green-500"
+                                ? "text-yellow-500"
+                                : "text-green-500"
                           }
                         >
                           {tech.workload ?? 0}%

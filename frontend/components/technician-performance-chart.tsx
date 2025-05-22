@@ -33,49 +33,46 @@ export default function TechnicianPerformanceChart({
   title?: string
   description?: string
 }) {
-  const { getTicketsPerTechnician, getAllTickets } = useApi()
+  const { getAllTickets } = useApi()
   const [data, setData] = useState<TechnicianPerformance[]>([])
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [assignedStats, allTickets] = await Promise.all([
-          getTicketsPerTechnician(),
-          getAllTickets(),
-        ])
+        const ticketData = await getAllTickets()
 
-        const resolvedMap: Record<string, number> = {}
+        const technicianMap: Record<string, TechnicianPerformance> = {}
 
-        // Count resolved tickets per technician
-        allTickets.forEach((ticket: any) => {
-          const technician = ticket.assignedTo
-          const status = ticket.status?.toLowerCase()
+        ticketData.forEach((ticket: any) => {
+          const tech = ticket.assignedTo
+          if (tech && tech.name) {
+            if (!technicianMap[tech.name]) {
+              technicianMap[tech.name] = {
+                name: tech.name,
+                assigned: 0,
+                resolved: 0,
+              }
+            }
 
-          if (
-            technician &&
-            (status === "resolved" || status === "closed")
-          ) {
-            resolvedMap[technician] = (resolvedMap[technician] || 0) + 1
+            technicianMap[tech.name].assigned += 1
+
+            if (
+              ticket.status === "resolved" ||
+              ticket.status === "closed"
+            ) {
+              technicianMap[tech.name].resolved += 1
+            }
           }
         })
 
-        // Merge assigned and resolved
-        const combined: TechnicianPerformance[] = assignedStats.map(
-          (item: any) => ({
-            name: item.technicianName,
-            assigned: item.ticketCount,
-            resolved: resolvedMap[item.technicianName] || 0,
-          })
-        )
-
-        setData(combined)
+        setData(Object.values(technicianMap))
       } catch (error) {
         console.error("Error loading technician performance:", error)
       }
     }
 
     fetchData()
-  }, [getTicketsPerTechnician, getAllTickets])
+  }, [getAllTickets])
 
   return (
     <Card>
@@ -88,7 +85,7 @@ export default function TechnicianPerformanceChart({
           <ResponsiveContainer width="100%" height="100%">
             <BarChart
               data={data}
-              margin={{ top: 5, right: 30, left: 20, bottom: 5 }}
+              margin={{ top: 5, right: 50, left: 30, bottom: 5 }}
             >
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="name" />
