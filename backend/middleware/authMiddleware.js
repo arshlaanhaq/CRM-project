@@ -92,19 +92,19 @@ const isStaff = (req, res, next) => {
 //   }
 //   return res.status(403).json({ message: 'Technician or Admin access only' });
 // };
-// const isAdminOrStaffOrCustomer = (req, res, next) => {
-//   const role = req.user?.role;
+const isAdminOrStaffOrTechnician = (req, res, next) => {
+  const role = req.user?.role;
 
-//   if (!role) {
-//     return res.status(401).json({ message: 'Unauthorized: No role found' });
-//   }
+  if (!role) {
+    return res.status(401).json({ message: 'Unauthorized: No role found' });
+  }
 
-//   if (['admin', 'staff', 'customer', 'technician'].includes(role)) {
-//     return next();
-//   }
+  if (['admin', 'staff', 'technician'].includes(role)) {
+    return next();
+  }
 
-//   return res.status(403).json({ message: 'Access denied: Admin, Staff, Customer, or Technician only' });
-// };
+  return res.status(403).json({ message: 'Access denied: Admin, Staff, Customer, or Technician only' });
+};
 
 module.exports = {
   protect,
@@ -113,9 +113,10 @@ module.exports = {
   isAdminOrStaff,
   isCustomer,
   isStaff,
+  isAdminOrStaffOrTechnician
   // isTechnicianOrAdmin,
   // isTechnicianOrstaff,
-  // isAdminOrStaffOrCustomer
+ 
 };
 
   

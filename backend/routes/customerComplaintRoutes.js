@@ -7,7 +7,7 @@ const { createComplaint,
     deleteComplaint,
     getCustomerEmailsFromComplaints,
     getCustomerDetailsByEmail } = require('../controllers/customerComplaintController');
-const { protect, isAdminOrStaff, isTechnician } = require('../middleware/authMiddleware');
+const { protect, isAdminOrStaff,isAdminOrStaffOrTechnician } = require('../middleware/authMiddleware');
 
 //  POST complaint (Public or protected, your choice)
 router.post('/', createComplaint);
@@ -23,7 +23,7 @@ router.get('/customer-details/:email', getCustomerDetailsByEmail);
 
 
 //  GET single complaint by ID
-router.get('/:id', protect, isAdminOrStaff ,isTechnician,getComplaintById);
+router.get('/:id', protect, isAdminOrStaffOrTechnician, getComplaintById);
 // DELETE route
 router.delete('/:id', protect, isAdminOrStaff, deleteComplaint);
 
