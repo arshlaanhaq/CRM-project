@@ -447,15 +447,17 @@ export const ApiProvider = ({ children }: { children: ReactNode }) => {
     });
     return res.data;
   };
+  
   const createComplaint = async (data: ComplaintPayload) => {
-    try {
-      const res = await axios.post("/customer-complaints", data, { headers: getAuthHeaders() });
-      return res.data;
-    } catch (error) {
-      console.error("Error creating complaint:", error);
-      throw error;
-    }
-  };
+  try {
+    const res = await axios.post("/customer-complaints", data);
+    return res.data;
+  } catch (error) {
+    console.error("Error creating complaint:", error);
+    throw error;
+  }
+};
+
 
   const getAllComplaints = async (data: ComplaintPayload) => {
     const res = await axios.get("/customer-complaints", {
