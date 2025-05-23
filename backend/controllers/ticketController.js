@@ -232,23 +232,20 @@ const markTicketResolved = async (req, res) => {
       .populate("createdBy", "name email")
       .populate("assignedTo", "name email")
       .populate("customerComplaint", "email");
-console.log("Ticket ID:", req.params.id);
-console.log("Populated Ticket:", ticket);
+    // console.log("Ticket ID:", req.params.id);
+    // console.log("Populated Ticket:", ticket);
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
     }
 
-    if (ticket.assignedTo._id.toString() !== req.user.id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to resolve this ticket" });
+    if (!ticket.assignedTo || ticket.assignedTo._id.toString() !== req.user.id.toString()) {
+      return res.status(403).json({ message: "Not authorized to resolve this ticket" });
     }
 
     ticket.status = "resolved";
     ticket.resolvedAt = new Date();
 
-    // Add to history
     ticket.history.push({
       status: "resolved",
       updatedBy: req.user.id,
@@ -257,28 +254,29 @@ console.log("Populated Ticket:", ticket);
 
     await ticket.save();
 
-    // 📧 Email to Staff who created the ticket
-
     if (ticket.createdBy?.email) {
       sendEmail(
         ticket.createdBy.email,
         `Ticket Resolved: ${ticket.title}`,
-        `Hi ${ticket.createdBy.name},\n\nThe ticket you created has been marked as  resolved by ${ticket.assignedTo.name}.\n\nTitle: ${ticket.title}\nDescription: ${ticket.description}\n\nThanks`
+        `Hi ${ticket.createdBy.name},\n\nThe ticket you created has been marked as resolved by ${ticket.assignedTo.name}.\n\nTitle: ${ticket.title}\nDescription: ${ticket.description}\n\nThanks`
       ).catch((err) => console.error("Email send failed to staff:", err));
     }
 
-    // 📧 Email to Customer from Complaint model
-
     if (ticket.customerComplaint) {
-      const complaint = await Complaint.findById(ticket.customerComplaint);
-      console.log("Complaint fetched manually:", complaint);
+      const complaintId = ticket.customerComplaint._id || ticket.customerComplaint;
+      const complaint = await Complaint.findById(complaintId);
+      // console.log("Complaint fetched manually:", complaint);
 
       if (complaint?.email) {
-        sendEmail(
-          complaint.email,
-          `Your Complaint Resolved: ${ticket.title}`,
-          `Hi,\n\nYour complaint associated with the ticket titled "${ticket.title}" has been marked as resolved.\n\nThanks`
-        );
+        try {
+          await sendEmail(
+            complaint.email,
+            `Your Complaint Resolved: ${ticket.title}`,
+            `Hi,\n\nYour complaint associated with the ticket titled "${ticket.title}" has been marked as resolved.\n\nThanks`
+          );
+        } catch (err) {
+          console.error("Email send failed to customer:", err);
+        }
       } else {
         console.log("❌ Complaint found but no email.");
       }
@@ -286,10 +284,11 @@ console.log("Populated Ticket:", ticket);
 
     res.status(200).json({ message: "Ticket marked as resolved", ticket });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error resolving ticket:", error);
+    res.status(500).json({ message: "Server error", error: error.message, stack: error.stack });
   }
 };
+
 
 
 

@@ -95,12 +95,13 @@ export default function TechnicianDashboardPage() {
 
   const handleResolveTicket = async (id: string) => {
     try {
-      await api.resolveTicket(id)
+     const result=  await api.resolveTicket(id)
       // Refresh tickets after resolving
+       console.log("Ticket resolved:", result);
       const updatedTickets = await api.getMyTickets()
       setTickets(updatedTickets)
     } catch (error) {
-      console.error("Error resolving ticket:", error)
+      console.error("Error resolving ticket:", error.response?.data || error.message);
     }
   }
   const filteredTickets = tickets.filter((ticket) => {

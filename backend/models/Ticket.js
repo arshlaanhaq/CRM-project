@@ -33,7 +33,7 @@ const ticketSchema = new mongoose.Schema({
 
   customerComplaint: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Complaint",
+    ref: "CustomerComplaint",
     required: true,
   },
 
