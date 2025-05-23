@@ -321,17 +321,25 @@ const closeTicketByStaff = async (req, res) => {
 
     ticket.status = "closed";
     ticket.closedAt = new Date();
-
-    // Add to history
     ticket.history.push({
       status: "closed",
       updatedBy: req.user.id,
-      updatedAt: ticket.closedAt, // Add timestamp to the history
+      updatedAt: ticket.closedAt,
     });
+
+    //  Update linked complaint's status
+    // console.log("ticket.complaintId", ticket.customerComplaint);
+    if (ticket.customerComplaint) {
+      const complaint = await Complaint.findById(ticket.customerComplaint);
+      if (complaint) {
+        complaint.status = "Closed";
+        await complaint.save();
+      }
+    }
 
     await ticket.save();
 
-    // Send email to staff who created the ticket
+    // 📧 Send Email
     if (ticket.createdBy?.email) {
       sendEmail(
         ticket.createdBy.email,
@@ -346,6 +354,7 @@ const closeTicketByStaff = async (req, res) => {
     res.status(500).json({ message: "Server error" });
   }
 };
+
 
 module.exports = {
   getTicketById,
