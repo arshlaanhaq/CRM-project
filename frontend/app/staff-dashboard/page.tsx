@@ -254,7 +254,7 @@ export default function StaffDashboardPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Tickets Resolved Today</CardTitle>
+              <CardTitle className="text-sm font-medium">Tickets Resolved </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">

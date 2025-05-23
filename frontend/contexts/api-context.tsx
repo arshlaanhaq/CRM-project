@@ -463,7 +463,7 @@ export const ApiProvider = ({ children }: { children: ReactNode }) => {
     const res = await axios.get("/customer-complaints", {
       headers: getAuthHeaders(),
     });
-    console.log(res.data);
+   
     return res.data;
   };
 

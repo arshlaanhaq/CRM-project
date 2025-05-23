@@ -109,10 +109,11 @@ export default function ReportsPage() {
       }
 
       if (status !== "all") params.status = status
-      if (technician !== "all") params.technicianId = technician
+      if (technician !== "all") params.assignedTo = technician
+
 
       const response = await getReports(params)
-     
+
       setReportData(response)
     } catch (error) {
       console.error("Failed to fetch reports", error)
@@ -270,7 +271,6 @@ export default function ReportsPage() {
                 </Select>
               </div>
 
-              {/* Technician */}
               <div className="space-y-2">
                 <label className="text-sm font-medium">Technician</label>
                 <Select value={technician} onValueChange={setTechnician}>
@@ -279,14 +279,15 @@ export default function ReportsPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Technicians</SelectItem>
-                    {technicians.map((tech, index) => (
-                      <SelectItem key={tech.id ?? `${tech.name}-${index}`} value={tech.id ?? `${tech.name}-${index}`}>
+                    {technicians.map((tech) => (
+                      <SelectItem key={tech._id} value={tech._id}>
                         {tech.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
               </div>
+
             </div>
 
             {/* Action Buttons */}

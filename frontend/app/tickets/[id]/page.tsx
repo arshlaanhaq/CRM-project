@@ -11,10 +11,31 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { AlertCircle, Calendar, CheckCircle, Clock, User, Star } from "lucide-react";
+import {
+  AlertCircle,
+  Calendar,
+  CheckCircle,
+  Clock,
+  User,
+  Star,
+} from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useApi } from "@/contexts/api-context";
-import { Textarea } from "@/components/ui/textarea"
+import { Textarea } from "@/components/ui/textarea";
+export interface ComplaintPayload {
+  _id?: string;
+  name: string;
+  email: string;
+  phone: string;
+  address: string;
+  productName: string;
+  serialNumber: string;
+  dateOfPurchase: Date;
+  issueDescription: string;
+  createdAt?: Date;
+  status?: 'Pending' | 'Ticket Created' | 'Closed';
+  assignedTo?: string; // New field to store assigned staff member
+}
 
 function formatDate(date: string | Date) {
   return new Date(date).toLocaleString();
@@ -22,29 +43,62 @@ function formatDate(date: string | Date) {
 
 export default function CustomerTicketDetail() {
   const { id } = useParams();
+   const params = useParams()
   const [role, setRole] = useState("");
   const router = useRouter();
-  const { getTicketById } = useApi();
+  const { getTicketById, getComplaintById } = useApi();
+  const [complaints, setComplaints] = useState<ComplaintPayload[]>([]);
   const [ticket, setTicket] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [rating, setRating] = useState(0)
-  const [feedbackText, setFeedbackText] = useState("")
-  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false)
-  const [userRole, setUserRole] = useState("")
+  const [rating, setRating] = useState(0);
+  const [feedbackText, setFeedbackText] = useState("");
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
+  const [userRole, setUserRole] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
+const [customerPinCode, setCustomerPinCode] = useState("");
+
 
   useEffect(() => {
-    const role = localStorage.getItem("userRole")
-    if (role) setUserRole(role)
-  }, [])
+    const role = localStorage.getItem("userRole");
+    if (role) setUserRole(role);
+  }, []);
+
+useEffect(() => {
+  if (!id) return;
+
+  const fetchDetails = async () => {
+    try {
+      setLoading(true);
+
+      // Step 1: Fetch ticket by ID
+      const ticketData = await getTicketById(id);
+      setTicket(ticketData);
+
+      // Step 2: If ticket includes a customerComplaint ID, fetch that
+      if (ticketData.customerComplaint) {
+        const complaintDetails = await getComplaintById(ticketData.customerComplaint);
+        setCustomerAddress(complaintDetails.address || "");
+        setCustomerPinCode(complaintDetails.zipCode || "");
+      }
+    } catch (err) {
+      console.error("Error fetching details:", err);
+      setError("Failed to load details. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchDetails();
+}, [id, getTicketById, getComplaintById]);
+
+
 
   useEffect(() => {
     if (id) {
       setLoading(true);
       getTicketById(id as string)
-
         .then((data) => {
-         
           setTicket(data);
           setLoading(false);
         })
@@ -64,9 +118,6 @@ export default function CustomerTicketDetail() {
 
   const handleRedirect = () => {
     switch (role) {
-      case "customer":
-        router.push("/customer-dashboard");
-        break;
       case "admin":
         router.push("/dashboard");
         break;
@@ -86,7 +137,7 @@ export default function CustomerTicketDetail() {
         rating,
         comment: feedbackText,
         submittedAt: new Date().toISOString(),
-      }
+      };
 
       const newComment = {
         id: Date.now().toString(),
@@ -94,21 +145,19 @@ export default function CustomerTicketDetail() {
         role: userRole,
         text: `Submitted feedback with rating: ${rating}/5`,
         timestamp: new Date().toISOString(),
-      }
+      };
 
       setTicket((prev) => ({
         ...prev,
         feedback: newFeedback,
         comments: [...(prev.comments || []), newComment], // ✅ safe spread
-      }))
+      }));
 
-      setFeedbackSubmitted(true)
+      setFeedbackSubmitted(true);
     } catch (error) {
-      console.error("Error submitting feedback:", error)
+      console.error("Error submitting feedback:", error);
     }
-  }
-
-
+  };
 
   const getStatusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -154,7 +203,7 @@ export default function CustomerTicketDetail() {
         <p className="text-muted-foreground mb-4">
           The ticket you're looking for doesn't exist or has been deleted.
         </p>
-        <Button onClick={() => router.push("/customer-dashboard")}>
+        <Button onClick={() => handleRedirect()}>
           Back to Dashboard
         </Button>
       </div>
@@ -164,7 +213,11 @@ export default function CustomerTicketDetail() {
     rating,
     setRating,
     disabled = false,
-  }: { rating: number; setRating: (rating: number) => void; disabled?: boolean }) => {
+  }: {
+    rating: number;
+    setRating: (rating: number) => void;
+    disabled?: boolean;
+  }) => {
     return (
       <div className="flex items-center">
         {[1, 2, 3, 4, 5].map((star) => (
@@ -173,15 +226,18 @@ export default function CustomerTicketDetail() {
             type="button"
             disabled={disabled}
             onClick={() => setRating(star)}
-            className={`${disabled ? "cursor-default" : "cursor-pointer hover:text-yellow-400"
-              } ${star <= rating ? "text-yellow-400" : "text-gray-300"}`}
+            className={`${
+              disabled
+                ? "cursor-default"
+                : "cursor-pointer hover:text-yellow-400"
+            } ${star <= rating ? "text-yellow-400" : "text-gray-300"}`}
           >
             <Star className="h-6 w-6 fill-current" />
           </button>
         ))}
       </div>
-    )
-  }
+    );
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -220,12 +276,36 @@ export default function CustomerTicketDetail() {
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
                       <div>
                         <h3 className="text-sm font-medium text-muted-foreground mb-2">
                           Description
                         </h3>
                         <p className="text-sm">{ticket.description}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                          Customer Name
+                        </h3>
+                        <p className="text-sm">{ticket.customer?.name}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                          Customer Email
+                        </h3>
+                        <p className="text-sm">{ticket.customer?.email}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                          Customer Phone
+                        </h3>
+                        <p className="text-sm">{ticket.customer?.phone}</p>
+                      </div>
+                      <div>
+                        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                          Customer Addess
+                        </h3>
+                         <p className="text-sm">Address: {customerAddress}</p>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">
@@ -276,7 +356,9 @@ export default function CustomerTicketDetail() {
               <CardContent>
                 <div className="space-y-4">
                   {/* Technician Assignment Updated (if applicable) */}
-                  {ticket.history?.find((h: any) => h.updatedBy === ticket.assignedTo?._id) && (
+                  {ticket.history?.find(
+                    (h: any) => h.updatedBy === ticket.assignedTo?._id
+                  ) && (
                     <div className="flex">
                       <div className="mr-4 flex flex-col items-center">
                         <div className="h-10 w-10 flex items-center justify-center rounded-full bg-purple-100">
@@ -284,10 +366,14 @@ export default function CustomerTicketDetail() {
                         </div>
                       </div>
                       <div>
-                        <div className="font-medium">Technician Assignment Updated</div>
+                        <div className="font-medium">
+                          Technician Assignment Updated
+                        </div>
                         <div className="text-sm text-muted-foreground">
                           {formatDate(
-                            ticket.history.find((h: any) => h.updatedBy === ticket.assignedTo?._id)?.updatedAt
+                            ticket.history.find(
+                              (h: any) => h.updatedBy === ticket.assignedTo?._id
+                            )?.updatedAt
                           )}
                         </div>
                       </div>
@@ -305,6 +391,7 @@ export default function CustomerTicketDetail() {
                       <div>
                         <div className="font-medium">
                           Assigned to Technician: {ticket.assignedTo.name}
+                          
                         </div>
                         <div className="text-sm text-muted-foreground">
                           Email: {ticket.assignedTo.email}
@@ -314,26 +401,29 @@ export default function CustomerTicketDetail() {
                   )}
 
                   {/* Status Change History - Newest First */}
-                  {[...ticket.history]?.reverse().map((entry: any, index: number) => (
-                    <div key={entry._id || index} className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-yellow-100">
-                          <Clock className="h-5 w-5 text-yellow-700" />
+                  {[...ticket.history]
+                    ?.reverse()
+                    .map((entry: any, index: number) => (
+                      <div key={entry._id || index} className="flex">
+                        <div className="mr-4 flex flex-col items-center">
+                          <div className="h-10 w-10 flex items-center justify-center rounded-full bg-yellow-100">
+                            <Clock className="h-5 w-5 text-yellow-700" />
+                          </div>
+                          {index < ticket.history.length - 1 && (
+                            <div className="h-full w-px bg-border" />
+                          )}
                         </div>
-                        {index < ticket.history.length - 1 && (
-                          <div className="h-full w-px bg-border" />
-                        )}
+                        <div>
+                          <div className="font-medium">
+                            Status changed to:{" "}
+                            {entry.status.replace("-", " ").toUpperCase()}
+                          </div>
+                          <div className="text-sm text-muted-foreground">
+                            {formatDate(entry.updatedAt)}
+                          </div>
+                        </div>
                       </div>
-                      <div>
-                        <div className="font-medium">
-                          Status changed to: {entry.status.replace("-", " ").toUpperCase()}
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {formatDate(entry.updatedAt)}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
 
                   {/* Ticket Created - Show at Bottom */}
                   <div className="flex">
@@ -351,10 +441,7 @@ export default function CustomerTicketDetail() {
                   </div>
                 </div>
               </CardContent>
-
-
             </Card>
-
           </div>
         </div>
         {userRole === "customer" && ticket.status === "resolved" && (
@@ -362,31 +449,48 @@ export default function CustomerTicketDetail() {
             <Card>
               <CardHeader>
                 <CardTitle>Your Feedback</CardTitle>
-                <CardDescription>Please rate your experience with this service request</CardDescription>
+                <CardDescription>
+                  Please rate your experience with this service request
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 {ticket.feedback || feedbackSubmitted ? (
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Your Rating</h3>
-                      <StarRating rating={ticket.feedback?.rating || rating} setRating={() => { }} disabled />
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                        Your Rating
+                      </h3>
+                      <StarRating
+                        rating={ticket.feedback?.rating || rating}
+                        setRating={() => {}}
+                        disabled
+                      />
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Your Comments</h3>
-                      <p className="text-sm">{ticket.feedback?.comment || feedbackText}</p>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                        Your Comments
+                      </h3>
+                      <p className="text-sm">
+                        {ticket.feedback?.comment || feedbackText}
+                      </p>
                     </div>
                     <div className="bg-green-50 text-green-700 p-3 rounded-md">
-                      Thank you for your feedback! It helps us improve our service.
+                      Thank you for your feedback! It helps us improve our
+                      service.
                     </div>
                   </div>
                 ) : (
                   <div className="space-y-4">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Rate your experience</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                        Rate your experience
+                      </h3>
                       <StarRating rating={rating} setRating={setRating} />
                     </div>
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground mb-2">Additional comments</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                        Additional comments
+                      </h3>
                       <Textarea
                         placeholder="Share your experience with our service..."
                         value={feedbackText}
@@ -395,7 +499,10 @@ export default function CustomerTicketDetail() {
                       />
                     </div>
                     <div className="flex justify-end">
-                      <Button onClick={handleSubmitFeedback} disabled={rating === 0}>
+                      <Button
+                        onClick={handleSubmitFeedback}
+                        disabled={rating === 0}
+                      >
                         Submit Feedback
                       </Button>
                     </div>

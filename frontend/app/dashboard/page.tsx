@@ -276,7 +276,7 @@ export default function DashboardPage() {
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Resolved Today</CardTitle>
+              <CardTitle className="text-sm font-medium">Resolved </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">

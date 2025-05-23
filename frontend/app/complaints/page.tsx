@@ -92,9 +92,9 @@ export default function ComplaintsPage() {
       const matchesSearch =
         searchTerm === "" ||
         complaint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        complaint.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        complaint._id?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+         complaint.email?.toLowerCase().includes(searchTerm.toLowerCase())
         complaint.issueDescription.toLowerCase().includes(searchTerm.toLowerCase())
+       
 
       const matchesStatus = statusFilter === "all" || complaint.status === statusFilter
 
@@ -124,50 +124,50 @@ export default function ComplaintsPage() {
     router.push(`/complaints/${id}`)
   }
 
-  const handleDeleteComplaint = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this complaint?")) return
+  // const handleDeleteComplaint = async (id: string) => {
+  //   if (!confirm("Are you sure you want to delete this complaint?")) return
 
-    try {
-      const response = await fetch(`/api/complaints/${id}`, {
-        method: "DELETE",
-      })
+  //   try {
+  //     const response = await fetch(`/api/complaints/${id}`, {
+  //       method: "DELETE",
+  //     })
 
-      if (!response.ok) {
-        throw new Error("Failed to delete complaint")
-      }
+  //     if (!response.ok) {
+  //       throw new Error("Failed to delete complaint")
+  //     }
 
-      setComplaints((prev) => prev.filter((c) => c._id !== id))
-    } catch (err) {
-      console.error("Error deleting complaint:", err)
-      alert("Failed to delete complaint. Please try again.")
-    }
-  }
+  //     setComplaints((prev) => prev.filter((c) => c._id !== id))
+  //   } catch (err) {
+  //     console.error("Error deleting complaint:", err)
+  //     alert("Failed to delete complaint. Please try again.")
+  //   }
+  // }
 
-  const handleAssignToStaff = async (complaintId: string, staffId: string) => {
-    try {
-      const response = await fetch(`/api/complaints/${complaintId}/assign`, {
-        method: "PUT",
-        body: JSON.stringify({ assignedTo: staffId }),
-        headers: {
-          "Content-Type": "application/json",
-        },
-      })
+  // const handleAssignToStaff = async (complaintId: string, staffId: string) => {
+  //   try {
+  //     const response = await fetch(`/api/complaints/${complaintId}/assign`, {
+  //       method: "PUT",
+  //       body: JSON.stringify({ assignedTo: staffId }),
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //     })
 
-      if (!response.ok) {
-        throw new Error("Failed to assign complaint")
-      }
+  //     if (!response.ok) {
+  //       throw new Error("Failed to assign complaint")
+  //     }
 
-      const updatedComplaint = await response.json()
-      setComplaints((prev) =>
-        prev.map((c) =>
-          c._id === complaintId ? { ...c, assignedTo: updatedComplaint.assignedTo } : c
-        )
-      )
-    } catch (err) {
-      console.error("Error assigning complaint:", err)
-      alert("Failed to assign complaint. Please try again.")
-    }
-  }
+  //     const updatedComplaint = await response.json()
+  //     setComplaints((prev) =>
+  //       prev.map((c) =>
+  //         c._id === complaintId ? { ...c, assignedTo: updatedComplaint.assignedTo } : c
+  //       )
+  //     )
+  //   } catch (err) {
+  //     console.error("Error assigning complaint:", err)
+  //     alert("Failed to assign complaint. Please try again.")
+  //   }
+  // }
 
   return (
     <RoleGuard allowedRoles={["admin", "staff"]}>
