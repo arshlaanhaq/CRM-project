@@ -38,8 +38,8 @@ export default function TechniciansPage() {
     averageResolutionTime: 0,
   })
   function isUserActive(status?: string): boolean {
-  return status?.toLowerCase() === "active"
-}
+    return status?.toLowerCase() === "active"
+  }
 
 
   useEffect(() => {
@@ -142,14 +142,19 @@ export default function TechniciansPage() {
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-start">
                 <Users className="h-5 w-5 text-muted-foreground mr-2" />
                 <span className="text-2xl font-bold">
-                  {loading ? "Loading..." : `${activeTechnicians}/${totalTechnicians}`}
+                  {loading
+                    ? "Loading..."
+                    : `${technicians.filter(t => isUserActive(t.status)).length}/${totalTechnicians}`}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {loading ? "" : `${totalTechnicians - activeTechnicians} technicians currently offline`}
+                {loading
+                  ? ""
+                  : `${totalTechnicians - technicians.filter(t => isUserActive(t.status)).length} technicians currently offline`}
               </p>
             </CardContent>
           </Card>
+
 
           <Card>
             <CardHeader className="pb-2">
@@ -205,11 +210,11 @@ export default function TechniciansPage() {
                               <td className="p-2">
                                 <span
                                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tech.status === "inactive"
-                                      ? "bg-red-100 text-red-800"
-                                      : "bg-green-100 text-green-800"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-green-100 text-green-800"
                                     }`}
                                 >
-                                   {isUserActive(tech.status) ? "Active" : "Inactive"}
+                                  {isUserActive(tech.status) ? "Active" : "Inactive"}
                                 </span>
                               </td>
                               <td className="p-2 text-center">{tech.ticketsAssigned ?? 0}</td>

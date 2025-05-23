@@ -251,11 +251,11 @@ export default function DashboardPage() {
               <div className="flex items-center">
                 <Users className="h-5 w-5 text-muted-foreground mr-2" />
                 <span className="text-2xl font-bold">
-                  {analytics.activeTechnicians || 0}/{analytics.totalTechnicians}
+                  {analytics?.activeTechnicians ?? 0}/{analytics?.totalTechnicians ?? 0}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {analytics.totalTechnicians - analytics.activeTechnicians || 0} technicians currently offline
+                {(analytics?.totalTechnicians ?? 0) - (analytics?.activeTechnicians ?? 0)} technicians currently offline
               </p>
             </CardContent>
           </Card>

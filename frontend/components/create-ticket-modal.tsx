@@ -162,11 +162,12 @@ const CreateTicketModal = () => {
               onChange={handleChange}
               className="w-full border rounded px-3 py-2"
             >
-              <option value="Low">Low</option>
-              <option value="Medium">Medium</option>
-              <option value="High">High</option>
-              <option value="Urgent">Urgent</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
             </select>
+
           </div>
           <div>
             <Label htmlFor="status">Status</Label>

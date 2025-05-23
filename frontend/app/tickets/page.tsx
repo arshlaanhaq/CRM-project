@@ -17,17 +17,25 @@ export default function TicketsPage() {
   const [tickets, setTickets] = useState<Ticket[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [selectedStatus, setSelectedStatus] = useState<string>("all")
+  const [searchQuery, setSearchQuery] = useState<string>("")
+
   const api = useApi()
 
-  type Ticket = {
-    id: string
-    title: string
-    description: string
-    status: "open" | "in-progress" | "resolved" | "closed"
-    priority: "low" | "medium" | "high"
-    createdAt: string
-    updatedAt: string
+type Ticket = {
+  id: string
+  title: string
+  description: string
+  status: "open" | "in-progress" | "resolved" | "closed"
+  priority: "low" | "medium" | "high"
+  createdAt: string
+  updatedAt: string
+  customer?: {
+    name?: string
+    email?: string
+    phone?: string
   }
+}
+
 
   useEffect(() => {
     const storedUserRole = localStorage.getItem("userRole") || ""
@@ -50,9 +58,22 @@ export default function TicketsPage() {
     fetchTickets()
   }, [api])
 
-  const filteredTickets = tickets.filter((ticket) =>
-    selectedStatus === "all" ? true : ticket.status === selectedStatus
-  )
+const filteredTickets = tickets.filter((ticket) => {
+  const query = searchQuery.toLowerCase()
+
+  const matchesSearch =
+    ticket.title.toLowerCase().includes(query) ||
+
+    ticket.customer?.name?.toLowerCase().includes(query) ||
+    ticket.customer?.email?.toLowerCase().includes(query) ||
+    ticket.customer?.phone?.toLowerCase().includes(query)
+
+  const matchesStatus =
+    selectedStatus === "all" || ticket.status === selectedStatus
+
+  return matchesSearch && matchesStatus
+})
+
 
   return (
     <LayoutWithSidebar>
@@ -67,6 +88,16 @@ export default function TicketsPage() {
         <TabsContent value="list">
           {/* Filters */}
           <div className="flex flex-col sm:flex-row gap-4 mb-6 w-full">
+            <div className="relative flex-1">
+              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                type="search"
+                placeholder="Search tickets..."
+                className="pl-8"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+              />
+            </div>
             <Select onValueChange={(value) => setSelectedStatus(value)}>
               <SelectTrigger className="w-full sm:w-[180px]">
                 <SelectValue placeholder="Filter by status" />

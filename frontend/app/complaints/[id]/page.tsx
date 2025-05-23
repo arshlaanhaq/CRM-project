@@ -149,39 +149,50 @@ export default function ComplaintDetailsPage() {
 const handleDeleteComplaint = async () => {
   if (!complaint) return;
 
-  toast.info(
-      <div>
-        <p>Are you sure you want to delete this Complaint?</p>
-        <div className="mt-2">
-          <button
-            onClick={async () => {
-              try {
-                await deleteComplaint(complaint._id);
-                toast.success("Technician deleted successfully");
-                router.push("/complaints"); // Redirect to technician list or another page
-              } catch (error) {
-                toast.error("Failed to delete technician");
-              }
-              toast.dismiss()
-            }}
-            className="bg-red-600 text-white px-4 py-2 mr-2 rounded"
-          >
-            Confirm Deletion
-          </button>
-          <button
-            onClick={() => toast.dismiss()}
-            className="bg-gray-300 text-gray-800 px-4 py-2 rounded"
-          >
-            Cancel
-          </button>
-        </div>
-      </div>,
-      {
-        // Keep the toast open until manually closed
-        closeOnClick: false, // Prevent closing the toast on click
-        position: "top-center", // Set the position of the toast
-      }
-    );
+toast.info(
+  <div className="text-center p-4">
+    <h3 className="text-lg font-semibold text-gray-900">
+      Delete Complaint?
+    </h3>
+    <p className="text-sm text-gray-600 mt-5">
+      This action cannot be undone. Are you sure you want to proceed?
+    </p>
+    <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+      <button
+        onClick={async () => {
+          try {
+            await deleteComplaint(complaint._id);
+            toast.success("Complaint deleted successfully");
+            router.push("/complaints");
+          } catch (error) {
+            toast.error("Failed to delete complaint");
+          }
+          toast.dismiss();
+        }}
+        className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-md text-sm font-medium transition"
+      >
+        Confirm
+      </button>
+      <button
+        onClick={() => toast.dismiss()}
+        className="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-2 rounded-md text-sm font-medium transition"
+      >
+        Cancel
+      </button>
+    </div>
+  </div>,
+  {
+    icon: false, // 💥 this removes the icon AND space
+    closeOnClick: false,
+    position: "top-center",
+    autoClose: false,
+    draggable: false,
+    className: "p-0 shadow-none bg-transparent", // optional: remove toast padding/border
+    bodyClassName: "p-0", // remove internal body padding
+  }
+);
+
+
 };
 
 

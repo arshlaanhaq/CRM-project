@@ -1,8 +1,7 @@
-const Ticket = require('../models/Ticket')
-const User = require('../models/User')
-const Complaint = require('../models/CustomerComplaint');
-const sendEmail = require('../utils/sendEmails')
-
+const Ticket = require("../models/Ticket");
+const User = require("../models/User");
+const Complaint = require("../models/CustomerComplaint");
+const sendEmail = require("../utils/sendEmails");
 
 const getAllTickets = async (req, res) => {
   const { status, sort } = req.query;
@@ -11,7 +10,7 @@ const getAllTickets = async (req, res) => {
   if (status) {
     query.status = status;
   }
-  let tickets = Ticket.find(query).populate('assignedTo createdBy');
+  let tickets = Ticket.find(query).populate("assignedTo createdBy");
 
   if (sort) {
     tickets = tickets.sort(sort);
@@ -22,46 +21,51 @@ const getAllTickets = async (req, res) => {
 const getTicketById = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
-      .populate('assignedTo', 'name email role')
-      .populate('createdBy', 'name email role');
-      // console.log(ticket)
+      .populate("assignedTo", "name email role")
+      .populate("createdBy", "name email role");
+    // console.log(ticket)
 
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+      return res.status(404).json({ message: "Ticket not found" });
     }
 
     const userId = req.user.id;
     const userRole = req.user.role;
 
     //  Customer can view only their own ticket
-    if (userRole === 'customer' && ticket.customer._id.toString() !== userId) {
-      return res.status(403).json({ message: 'Not authorized to view this ticket' });
+    if (userRole === "customer" && ticket.customer._id.toString() !== userId) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to view this ticket" });
     }
 
     // Technician can view only assigned tickets
-    if (userRole === 'technician' && ticket.assignedTo._id.toString() !== userId) {
-      return res.status(403).json({ message: 'Not authorized to view this ticket' });
+    if (
+      userRole === "technician" &&
+      ticket.assignedTo._id.toString() !== userId
+    ) {
+      return res
+        .status(403)
+        .json({ message: "Not authorized to view this ticket" });
     }
 
     // Staff and admin can view any ticket
     // updatedAt for showing the last update time
     const ticketData = {
       ...ticket.toObject(),
-      updatedAt: ticket.updatedAt 
+      updatedAt: ticket.updatedAt,
     };
 
-    
     ticketData.history = ticket.history;
 
     res.json(ticketData);
-
   } catch (err) {
-    console.error('Error fetching ticket:', err);
-    res.status(500).json({ error: 'Server error' });
+    console.error("Error fetching ticket:", err);
+    res.status(500).json({ error: "Server error" });
   }
 };
 const createTicket = async (req, res) => {
-  const { title, description, assignedTo, customer } = req.body;
+  const { title, description, assignedTo, customer, priority } = req.body;
   const customerEmail = customer?.email;
 
   try {
@@ -69,13 +73,15 @@ const createTicket = async (req, res) => {
 
     const complaint = await Complaint.findOne({
       email: customerEmail,
-      status: 'Pending',
+      status: "Pending",
     }).sort({ createdAt: -1 });
 
     // console.log("complaint", complaint);
 
     if (!complaint) {
-      return res.status(404).json({ message: 'No pending complaint found for this customer' });
+      return res
+        .status(404)
+        .json({ message: "No pending complaint found for this customer" });
     }
 
     const ticket = await Ticket.create({
@@ -83,6 +89,7 @@ const createTicket = async (req, res) => {
       description,
       assignedTo,
       createdBy: req.user.id,
+      priority, // <-- add this line
       customer: {
         _id: complaint._id,
         name: complaint.name,
@@ -92,7 +99,7 @@ const createTicket = async (req, res) => {
       customerComplaint: complaint._id,
     });
 
-    complaint.status = 'Ticket Created';
+    complaint.status = "Ticket Created";
     await complaint.save();
 
     const technician = await User.findById(assignedTo);
@@ -101,36 +108,33 @@ const createTicket = async (req, res) => {
         technician.email,
         `New Ticket Assigned: ${title}`,
         `Hi ${technician.name},\n\nYou have been assigned a new ticket:\n\nTitle: ${title}\nCustomer: ${complaint.name} (${complaint.email})\n\nThanks`
-      ).catch(err => console.error('Technician Email failed:', err));
+      ).catch((err) => console.error("Technician Email failed:", err));
     }
 
     sendEmail(
       complaint.email,
       `Ticket Created: ${title}`,
       `Hi ${complaint.name},\n\nYour ticket has been created successfully.\n\nThanks`
-    ).catch(err => console.error('Customer Email failed:', err));
+    ).catch((err) => console.error("Customer Email failed:", err));
 
     res.status(201).json(ticket);
-
   } catch (err) {
-    console.error('Ticket creation failed:', err);
-    res.status(500).json({ message: 'Server error while creating ticket' });
+    console.error("Ticket creation failed:", err);
+    res.status(500).json({ message: "Server error while creating ticket" });
   }
 };
-
-
-
-
 
 const getCustomerTickets = async (req, res) => {
   try {
     const tickets = await Ticket.find({ "customer._id": req.user.id })
-      .populate('assignedTo', '_id name email role')
+      .populate("assignedTo", "_id name email role")
       .exec();
-      console.log("backend ", tickets)
+    console.log("backend ", tickets);
 
     if (tickets.length === 0) {
-      return res.status(404).json({ message: 'No tickets found for this customer' });
+      return res
+        .status(404)
+        .json({ message: "No tickets found for this customer" });
     }
 
     res.json(tickets);
@@ -138,7 +142,6 @@ const getCustomerTickets = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
-
 
 const getAssignedTickets = async (req, res) => {
   try {
@@ -156,7 +159,7 @@ const updateTicketByAdmin = async (req, res) => {
 
     const ticket = await Ticket.findById(id);
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+      return res.status(404).json({ message: "Ticket not found" });
     }
 
     let historyEntry = null;
@@ -204,7 +207,7 @@ const updateTicketByAdmin = async (req, res) => {
     res.status(200).json(updatedTicket);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ message: 'Server error while updating ticket' });
+    res.status(500).json({ message: "Server error while updating ticket" });
   }
 };
 
@@ -213,38 +216,40 @@ const deleteTicket = async (req, res) => {
     const ticket = await Ticket.findById(req.params.id);
 
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+      return res.status(404).json({ message: "Ticket not found" });
     }
 
     await ticket.deleteOne();
-    res.status(200).json({ message: 'Ticket deleted successfully' });
+    res.status(200).json({ message: "Ticket deleted successfully" });
   } catch (error) {
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
 const markTicketResolved = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
-      .populate('createdBy', 'name email')
-      .populate('assignedTo', 'name email'); 
+      .populate("createdBy", "name email")
+      .populate("assignedTo", "name email");
 
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+      return res.status(404).json({ message: "Ticket not found" });
     }
 
     if (ticket.assignedTo._id.toString() !== req.user.id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to resolve this ticket' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to resolve this ticket" });
     }
 
-    ticket.status = 'resolved';
-    ticket.resolvedAt = new Date();  
+    ticket.status = "resolved";
+    ticket.resolvedAt = new Date();
 
     // Add to history (to track the status change)
     ticket.history.push({
-      status: 'resolved',
+      status: "resolved",
       updatedBy: req.user.id,
-      updatedAt: ticket.resolvedAt,  
+      updatedAt: ticket.resolvedAt,
     });
 
     await ticket.save();
@@ -255,14 +260,13 @@ const markTicketResolved = async (req, res) => {
         ticket.createdBy.email,
         `Ticket Resolved: ${ticket.title}`,
         `Hi ${ticket.createdBy.name},\n\nThe ticket you created has been marked as resolved by ${ticket.assignedTo.name}.\n\nTitle: ${ticket.title}\nDescription: ${ticket.description}\n\nThanks`
-      ).catch((err) => console.error('Email send failed:', err));
+      ).catch((err) => console.error("Email send failed:", err));
     }
 
-    res.status(200).json({ message: 'Ticket marked as resolved', ticket });
-
+    res.status(200).json({ message: "Ticket marked as resolved", ticket });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
@@ -273,55 +277,56 @@ const setTicketInProgress = async (req, res) => {
     const ticket = await Ticket.findById(req.params.id);
 
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+      return res.status(404).json({ message: "Ticket not found" });
     }
 
     if (ticket.assignedTo.toString() !== req.user._id.toString()) {
-      return res.status(403).json({ message: 'Not authorized to update this ticket' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to update this ticket" });
     }
 
-    ticket.status = 'in-progress';
+    ticket.status = "in-progress";
 
     // 👇 Add to history array
     ticket.history.push({
-      status: 'in-progress',
+      status: "in-progress",
       changedBy: req.user._id,
-      note: 'Marked as in-progress by technician',
+      note: "Marked as in-progress by technician",
     });
 
     await ticket.save();
 
-    res.status(200).json({ message: 'Ticket marked as in-progress', ticket });
+    res.status(200).json({ message: "Ticket marked as in-progress", ticket });
   } catch (err) {
-    res.status(500).json({ message: 'Failed to update ticket status' });
+    res.status(500).json({ message: "Failed to update ticket status" });
   }
 };
 
-
-
-const  closeTicketByStaff  = async (req, res) => {
+const closeTicketByStaff = async (req, res) => {
   try {
     const ticket = await Ticket.findById(req.params.id)
-      .populate('createdBy', 'name email')
-      .populate('assignedTo', 'name email');
+      .populate("createdBy", "name email")
+      .populate("assignedTo", "name email");
 
     if (!ticket) {
-      return res.status(404).json({ message: 'Ticket not found' });
+      return res.status(404).json({ message: "Ticket not found" });
     }
 
     if (ticket.createdBy._id.toString() !== req.user.id.toString()) {
-      
-      return res.status(403).json({ message: 'Not authorized to close this ticket' });
+      return res
+        .status(403)
+        .json({ message: "Not authorized to close this ticket" });
     }
 
-    ticket.status = 'closed';
-    ticket.closedAt = new Date();  
+    ticket.status = "closed";
+    ticket.closedAt = new Date();
 
     // Add to history
     ticket.history.push({
-      status: 'closed',
+      status: "closed",
       updatedBy: req.user.id,
-      updatedAt: ticket.closedAt,  // Add timestamp to the history
+      updatedAt: ticket.closedAt, // Add timestamp to the history
     });
 
     await ticket.save();
@@ -332,22 +337,25 @@ const  closeTicketByStaff  = async (req, res) => {
         ticket.createdBy.email,
         `Ticket Closed: ${ticket.title}`,
         `Hi ${ticket.createdBy.name},\n\nThe ticket you created has been closed by ${ticket.assignedTo.name}.\n\nTitle: ${ticket.title}\nDescription: ${ticket.description}\n\nThanks`
-      ).catch((err) => console.error('Email send failed:', err));
+      ).catch((err) => console.error("Email send failed:", err));
     }
 
-    res.status(200).json({ message: 'Ticket marked as closed', ticket });
-
+    res.status(200).json({ message: "Ticket marked as closed", ticket });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-
-
-
-
-
-module.exports = {getTicketById ,getAllTickets, createTicket, getAssignedTickets,
-   updateTicketByAdmin, deleteTicket, markTicketResolved,
-    closeTicketByStaff, getCustomerTickets, setTicketInProgress }
+module.exports = {
+  getTicketById,
+  getAllTickets,
+  createTicket,
+  getAssignedTickets,
+  updateTicketByAdmin,
+  deleteTicket,
+  markTicketResolved,
+  closeTicketByStaff,
+  getCustomerTickets,
+  setTicketInProgress,
+};

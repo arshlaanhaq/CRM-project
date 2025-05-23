@@ -295,18 +295,10 @@ export default function ComplaintsPage() {
                           <TableCell className="max-w-[200px] truncate">{complaint.issueDescription}</TableCell>
                           <TableCell>{formatDate(complaint.createdAt?.toString() || "")}</TableCell>
                           <TableCell className="text-right">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="icon">
-                                  <MoreHorizontal className="h-4 w-4" />
+                           <Button variant="ghost" size="icon" onClick={() => handleViewComplaint(complaint._id!)}>
+                                 view
                                 </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem onClick={() => handleViewComplaint(complaint._id!)}>View</DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => handleDeleteComplaint(complaint._id!)}>Delete</DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
+                            
                           </TableCell>
                         </TableRow>
                       ))}
