@@ -25,12 +25,6 @@ const ticketSchema = new mongoose.Schema({
     required: true,
   },
 
-  priority: { type: String, enum: ['low', 'medium', 'high','urgent'], default: 'medium' },
-  status: { type: String, enum: ['open', 'in-progress', 'closed', 'resolved'], default: 'open' },
-  assignedTo: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-
-
   customer: {
     name: { type: String, required: true },
     email: { type: String, required: true },

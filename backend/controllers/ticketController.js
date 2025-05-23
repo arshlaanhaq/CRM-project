@@ -89,7 +89,7 @@ const createTicket = async (req, res) => {
       description,
       assignedTo,
       createdBy: req.user.id,
-      priority, // <-- add this line
+      priority, 
       customer: {
         _id: complaint._id,
         name: complaint.name,
