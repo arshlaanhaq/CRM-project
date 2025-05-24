@@ -366,7 +366,7 @@ const closeTicketByStaff = async (req, res) => {
       sendEmail(
         ticket.createdBy.email,
         `Ticket Closed: ${ticket.title}`,
-        `Hi ${ticket.createdBy.name},\n\nThe ticket you created has been closed by ${ticket.assignedTo.name}.\n\nTitle: ${ticket.title}\nDescription: ${ticket.description}\n\nThanks`
+        `Hi ${ticket.createdBy.name},\n\nThe ticket you created has been closed.\n\nTitle: ${ticket.title}\nDescription: ${ticket.description}\n\nThanks`
       ).catch((err) => console.error("Email send failed:", err));
     }
 
