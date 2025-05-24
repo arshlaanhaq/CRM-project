@@ -1,11 +1,31 @@
 "use client";
-import { createContext, useContext, useReducer, ReactNode } from "react";
+import { createContext, useContext, useReducer, ReactNode, useRef, useEffect } from "react";
 import axios from "@/utils/axios";
+import { io, Socket } from "socket.io-client";
+function decodeJWT(token: string | null) {
+  if (!token) return null;
+  try {
+    const payloadBase64 = token.split('.')[1]; // Get the payload part
+    const decodedPayload = atob(payloadBase64); // Decode base64
+    return JSON.parse(decodedPayload); // Parse JSON
+  } catch (error) {
+    console.error("Failed to decode token", error);
+    return null;
+  }
+}
 
 // Helper to get auth headers
 const getAuthHeaders = () => {
   const token = localStorage.getItem("token");
+  const decoded = decodeJWT(token);
+console.log("Decoded token:", decoded);
+
+// Now you can check role without jwt-decode:
+if (decoded?.role === "technician") {
+  console.log("User is a technician");
+}
   if (!token) throw new Error("No token found");
+
   return { Authorization: `Bearer ${token}` };
 };
 
@@ -210,6 +230,7 @@ interface AdminProfile {
 }
 
 interface ApiContextType {
+  
   technician: User;
   assignedTickets: Ticket[];
   login: (email: string, password: string) => Promise<{ user: User; token: string }>;
@@ -257,6 +278,7 @@ const ApiContext = createContext<ApiContextType | null>(null);
 
 export const ApiProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(forgotPasswordReducer, initialState);
+   const socketRef = useRef<Socket | null>(null);
   const login = async (email: string, password: string) => {
     const res = await axios.post("/auth/login", { email, password });
     const { user, token } = res.data;
@@ -268,6 +290,30 @@ export const ApiProvider = ({ children }: { children: ReactNode }) => {
     return { user, token };
   };
 
+ 
+    useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token && !socketRef.current) {
+      socketRef.current = io("http://localhost:5000", {
+        auth: { token },
+      });
+
+      socketRef.current.on("connect", () => {
+        console.log("Socket connected");
+      });
+
+      socketRef.current.on("disconnect", () => {
+        console.log("Socket disconnected");
+      });
+    }
+
+    return () => {
+      socketRef.current?.disconnect();
+      socketRef.current = null;
+    };
+  }, []);
+ 
   const register = async (data: RegisterPayload) => {
     const res = await axios.post("/auth/register", data);
     console.log(res.data);
@@ -526,7 +572,8 @@ export const ApiProvider = ({ children }: { children: ReactNode }) => {
         forgotPassword,
         resetPassword,
         fetchCustomerEmails,
-        getCustomerDetailsByEmail
+        getCustomerDetailsByEmail,
+        socket: socketRef.current
       }}
     >
       {children}

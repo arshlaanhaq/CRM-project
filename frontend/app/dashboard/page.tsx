@@ -1,7 +1,7 @@
 "use client"
 
 import { useRouter } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect,useRef } from "react"
 import LayoutWithSidebar from "@/components/layout-with-sidebar"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CheckCircle, Clock, Ticket, Users, UserCog, BarChart2, AlertTriangle } from "lucide-react"
@@ -17,6 +17,7 @@ import Link from "next/link"
 import { Badge } from "@/components/ui/badge"
 import { useApi } from "@/contexts/api-context"
 import TicketList from "@/components/ticket-list"
+import { getSocket } from "@/utils/socket"
 
 export default function DashboardPage() {
   const router = useRouter()
@@ -54,6 +55,8 @@ export default function DashboardPage() {
   const [error, setError] = useState("")
   const [activeStaff, setActiveStaff] = useState(0)
   const [totalStaff, setTotalStaff] = useState(0)
+  const [onlineTechnicians, setOnlineTechnicians] = useState<string[]>([]);
+  const [onlineStaffIds, setOnlineStaffIds] = useState<string[]>([])
   const { getTechnicians } = useApi()
   const [technicians, setTechnicians] = useState<Technician[]>([])
   const [activeTechnicians, setActiveTechnicians] = useState<number>(0)
@@ -63,7 +66,7 @@ export default function DashboardPage() {
   const [complaints, setComplaints] = useState([])
   const [complaintCount, setComplaintCount] = useState(0)
   const [isLoading, setIsLoading] = useState(false)
-
+const socketRef = useRef(null);
   useEffect(() => {
     const fetchStaff = async () => {
       try {
@@ -112,6 +115,101 @@ export default function DashboardPage() {
 
     fetchAnalytics()
   }, [router, api])
+    useEffect(() => {
+      const fetchTechnicians = async () => {
+        try {
+          setLoading(true)
+          const data: Technician[] = await getTechnicians()
+          setTechnicians(data)
+          const active = data.filter((tech) => tech.status === "active" || !tech.status).length
+          setActiveTechnicians(active)
+          setTotalTechnicians(data.length)
+          setError("")
+        } catch (err) {
+          console.error("Failed to fetch technicians:", err)
+          setError("Failed to load technicians. Please try again later.")
+        } finally {
+          setLoading(false)
+        }
+      }
+  
+      fetchTechnicians()
+    }, [getTechnicians])
+  useEffect(() => {
+    const token = localStorage.getItem("token") || "";
+    if (!token) return;
+
+    socketRef.current = getSocket(token);
+
+    socketRef.current.on("connect", () => {
+      console.log("Socket connected:", socketRef.current.id);
+      socketRef.current.emit("getOnlineUsers"); // request fresh data on connect
+    });
+
+    return () => {
+      socketRef.current.disconnect();
+    };
+  }, []);
+
+  // Listen to onlineTechnicians only
+  useEffect(() => {
+    if (!socketRef.current) return;
+
+    const handleOnlineUsers = (data) => {
+      if (Array.isArray(data.technicians)) {
+        const techIds = data.technicians.map(t => t._id);
+        setOnlineTechnicians(techIds);
+      }
+    };
+
+    socketRef.current.on("onlineUsers", handleOnlineUsers);
+
+    return () => {
+      socketRef.current.off("onlineUsers", handleOnlineUsers);
+    };
+  }, []);
+
+  // Listen to onlineStaff only
+  useEffect(() => {
+    if (!socketRef.current) return;
+
+    const handleOnlineUsers = (data) => {
+      if (Array.isArray(data.staff)) {
+        const staffIds = data.staff.map(s => s._id);
+        setOnlineStaffIds(staffIds);
+      }
+    };
+
+    socketRef.current.on("onlineUsers", handleOnlineUsers);
+
+    return () => {
+      socketRef.current.off("onlineUsers", handleOnlineUsers);
+    };
+  }, []);
+
+
+
+useEffect(() => {
+  // Function to request fresh online users from server
+  const fetchOnlineUsers = () => {
+    const token = localStorage.getItem("token") || "";
+    if (!token) return;
+    const socket = getSocket(token);
+    socket.emit("getOnlineUsers");
+  };
+
+  const interval = setInterval(() => {
+    if (onlineTechnicians.length === 0 && onlineStaffIds.length === 0) {
+      console.log("Both online lists empty. Asking server for update...");
+      fetchOnlineUsers();
+    }
+  }, 30000); // every 30 seconds
+
+  return () => clearInterval(interval);
+}, [onlineTechnicians, onlineStaffIds]);
+
+
+
 
   useEffect(() => {
     const fetchData = async () => {
@@ -243,19 +341,23 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
-          <Card>
+           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Active Technicians</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-start">
                 <Users className="h-5 w-5 text-muted-foreground mr-2" />
                 <span className="text-2xl font-bold">
-                  {analytics?.activeTechnicians ?? 0}/{analytics?.totalTechnicians ?? 0}
+                  {loading
+                    ? "Loading..."
+                    : `${onlineTechnicians.length}/${totalTechnicians}`}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {(analytics?.totalTechnicians ?? 0) - (analytics?.activeTechnicians ?? 0)} technicians currently offline
+                {loading
+                  ? ""
+                  : `${totalTechnicians - onlineTechnicians.length} technicians currently offline`}
               </p>
             </CardContent>
           </Card>
@@ -266,14 +368,22 @@ export default function DashboardPage() {
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
-                <UserCog className="h-5 w-5 text-muted-foreground mr-2" />
-                <span className="text-2xl font-bold">{loading ? "Loading..." : `${activeStaff}/${totalStaff}`}</span>
+                <Users className="h-5 w-5 text-muted-foreground mr-2" />
+                <span className="text-2xl font-bold">
+                  {loading
+                    ? "Loading..."
+                    : `${onlineStaffIds.length}/${staff.length}`}
+                </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {loading ? "" : `${totalStaff - activeStaff} staff members currently offline`}
+                {loading
+                  ? ""
+                  : `${staff.length - onlineStaffIds.length} staff currently offline`}
               </p>
+              {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
             </CardContent>
           </Card>
+
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">Resolved </CardTitle>

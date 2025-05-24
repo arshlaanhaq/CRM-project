@@ -16,6 +16,8 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
 import { Sheet, SheetContent } from "@/components/ui/sheet"
+import  {socket}  from "@/utils/socket"
+
 
 export default function Header() {
   const pathname = usePathname()
@@ -38,11 +40,18 @@ export default function Header() {
     setUserRole(storedUserRole)
   }, [pathname])
 
-  const handleLogout = () => {
-    localStorage.removeItem("userName")
-    localStorage.removeItem("userRole")
-    router.push("/login")
+const handleLogout = () => {
+  localStorage.removeItem("token");
+  localStorage.removeItem("userName");
+  localStorage.removeItem("userRole");
+
+  if (socket) {
+    socket.disconnect();
   }
+
+  router.push("/login");
+};
+
 
   if (!showHeader) return null
 

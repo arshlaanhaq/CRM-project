@@ -15,6 +15,7 @@ import { useRouter } from "next/navigation"
 import { useState, useEffect } from "react"
 import TicketList from "@/components/ticket-list"
 import { Badge } from "@/components/ui/badge"
+import { getSocket } from "@/utils/socket"
 
 
 export default function StaffDashboardPage() {
@@ -24,8 +25,10 @@ export default function StaffDashboardPage() {
   const [userRole, setUserRole] = useState<string>("")
   const [complaints, setComplaints] = useState([])
   const [complaintCount, setComplaintCount] = useState(0)
+  const [onlineTechnicians, setOnlineTechnicians] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false)
   const [loading, setLoading] = useState(true)
+   const [totalTechnicians, setTotalTechnicians] = useState<number>(0)
   const [error, setError] = useState("")
   const [tickets, setTickets] = useState<any[]>([])
   const [analytics, setAnalytics] = useState<any>({
@@ -78,6 +81,37 @@ export default function StaffDashboardPage() {
 
     fetchAnalytics()
   }, [router, api])
+  useEffect(() => {
+    const token = localStorage.getItem("token") || "";
+    if (!token) return;
+
+    const socket = getSocket(token);
+
+    socket.on("onlineUsers", (data) => {
+      console.log("Received onlineUsers data:", data);
+      if (data && Array.isArray(data.technicians)) {
+        console.log("Technicians array:", data.technicians);
+        const onlineTechIds = data.technicians.map((t: any) => t._id);
+        console.log("Online technicians IDs:", onlineTechIds);
+        setOnlineTechnicians(onlineTechIds);
+      } else {
+        console.warn("No technicians array found in onlineUsers data");
+        setOnlineTechnicians([]);
+      }
+    });
+
+
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+
+    return () => {
+      socket.off("onlineUsers");
+      socket.disconnect();
+    };
+  }, []);
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -239,14 +273,19 @@ export default function StaffDashboardPage() {
               <CardTitle className="text-sm font-medium">Active Technicians</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center">
+              <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-start">
                 <Users className="h-5 w-5 text-muted-foreground mr-2" />
                 <span className="text-2xl font-bold">
-                  {(analytics.activeTechnicians ?? 0)}/{analytics.totalTechnicians ?? 0}
+                  {loading
+                    ? "Loading..."
+                    : `${onlineTechnicians.length}/${analytics.totalTechnicians}`}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {(analytics.totalTechnicians ?? 0) - (analytics.activeTechnicians ?? 0)} technicians currently offline
+                {!loading && totalTechnicians != null
+                  ? `${analytics.totalTechnicians - onlineTechnicians.length} technicians currently offline`
+                  : null}
+
               </p>
             </CardContent>
           </Card>

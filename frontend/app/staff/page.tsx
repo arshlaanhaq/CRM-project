@@ -11,6 +11,7 @@ import Link from "next/link"
 import { useApi } from "@/contexts/api-context"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
+import { getSocket } from "@/utils/socket"
 
 // Define the shape of a staff member object
 type StaffMember = {
@@ -33,6 +34,7 @@ function isUserActive(status?: string): boolean {
 export default function StaffPage() {
   const { getStaff } = useApi()
   const [staff, setStaff] = useState<StaffMember[]>([])
+  const [onlineStaffIds, setOnlineStaffIds] = useState<string[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>("")
   const [activeStaff, setActiveStaff] = useState<number>(0)
@@ -61,6 +63,38 @@ export default function StaffPage() {
     fetchStaff()
   }, [getStaff])
 
+  useEffect(() => {
+    const token = localStorage.getItem("token") || ""
+    if (!token) return
+
+    const socket = getSocket(token)
+
+    socket.on("onlineUsers", (data) => {
+      console.log("Received onlineUsers data:", data)
+      if (data && Array.isArray(data.staff)) {
+        console.log("Staff array:", data.staff)
+        const onlineIds = data.staff.map((s: any) => s._id)
+        console.log("Online staff IDs:", onlineIds)
+        setOnlineStaffIds(onlineIds)
+      } else {
+        console.warn("No staff array found in onlineUsers data")
+        setOnlineStaffIds([])
+      }
+    })
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id)
+    })
+
+    return () => {
+      socket.off("onlineUsers")
+      socket.disconnect()
+    }
+  }, [])
+
+  // Helper to check if a staff member is online
+  const isOnline = (id: string) => onlineStaffIds.includes(id)
+
   return (
     <RoleGuard allowedRoles={["admin"]}>
       <LayoutWithSidebar>
@@ -87,15 +121,15 @@ export default function StaffPage() {
               <div className="flex items-center">
                 <Users className="h-5 w-5 text-muted-foreground mr-2" />
                 <span className="text-2xl font-bold">
-                   {loading
+                  {loading
                     ? "Loading..."
-                    : `${staff.filter(t => isUserActive(t.status)).length}/${staff.length}`}
+                    : `${onlineStaffIds.length}/${staff.length}`}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {loading
                   ? ""
-                  : `${staff.length - staff.filter(t => isUserActive(t.status)).length} technicians currently offline`}
+                  : `${staff.length - onlineStaffIds.length} staff currently offline`}
               </p>
               {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
             </CardContent>
@@ -143,12 +177,12 @@ export default function StaffPage() {
                               <td className="p-2">{member.email}</td>
                               <td className="p-2">
                                 <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${member.status === "inactive"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-green-100 text-green-800"
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isOnline(member._id)
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-red-100 text-red-800"
                                     }`}
                                 >
-                                 {isUserActive(member.status) ? "Active" : "Inactive"}
+                                  {isOnline(member._id) ? "Online" : "Offline"}
                                 </span>
                               </td>
                               <td className="p-2">{member.department || "Support"}</td>

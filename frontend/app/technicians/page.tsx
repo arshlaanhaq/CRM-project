@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button"
 import Link from "next/link"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { useApi } from "@/contexts/api-context"
+import { getSocket } from "@/utils/socket"
 
 type Technician = {
   _id: string
@@ -31,16 +32,50 @@ export default function TechniciansPage() {
   const [error, setError] = useState<string>("")
   const [activeTechnicians, setActiveTechnicians] = useState<number>(0)
   const [totalTechnicians, setTotalTechnicians] = useState<number>(0)
+ const [onlineTechnicians, setOnlineTechnicians] = useState<string[]>([]);
   const [stats, setStats] = useState({
     assigned: 0,
     inProgress: 0,
     resolved: 0,
     averageResolutionTime: 0,
   })
+
   function isUserActive(status?: string): boolean {
     return status?.toLowerCase() === "active"
   }
 
+  // Initialize socket connection and listen for onlineTechnicians event
+
+  useEffect(() => {
+    const token = localStorage.getItem("token") || "";
+    if (!token) return;
+
+    const socket = getSocket(token);
+
+  socket.on("onlineUsers", (data) => {
+  console.log("Received onlineUsers data:", data);
+  if (data && Array.isArray(data.technicians)) {
+    console.log("Technicians array:", data.technicians);
+    const onlineTechIds = data.technicians.map((t: any) => t._id);
+    console.log("Online technicians IDs:", onlineTechIds);
+    setOnlineTechnicians(onlineTechIds);
+  } else {
+    console.warn("No technicians array found in onlineUsers data");
+    setOnlineTechnicians([]);
+  }
+});
+
+
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+
+    return () => {
+      socket.off("onlineUsers");
+      socket.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     const fetchTechnicians = async () => {
@@ -144,17 +179,16 @@ export default function TechniciansPage() {
                 <span className="text-2xl font-bold">
                   {loading
                     ? "Loading..."
-                    : `${technicians.filter(t => isUserActive(t.status)).length}/${totalTechnicians}`}
+                    : `${onlineTechnicians.length}/${totalTechnicians}`}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {loading
                   ? ""
-                  : `${totalTechnicians - technicians.filter(t => isUserActive(t.status)).length} technicians currently offline`}
+                  : `${totalTechnicians - onlineTechnicians.length} technicians currently offline`}
               </p>
             </CardContent>
           </Card>
-
 
           <Card>
             <CardHeader className="pb-2">
@@ -197,6 +231,7 @@ export default function TechniciansPage() {
                       </thead>
                       <tbody>
                         {technicians.length === 0 ? (
+                          
                           <tr>
                             <td colSpan={6} className="text-center py-4">
                               No technicians found
@@ -204,26 +239,25 @@ export default function TechniciansPage() {
                           </tr>
                         ) : (
                           technicians.map((tech, index) => (
+                            
                             <tr key={tech._id || `tech-${index}`} className="border-b hover:bg-muted/50">
                               <td className="p-2">{tech.name}</td>
                               <td className="p-2">{tech.email}</td>
                               <td className="p-2">
                                 <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tech.status === "inactive"
-                                    ? "bg-red-100 text-red-800"
-                                    : "bg-green-100 text-green-800"
+                                  className={`inline-block rounded-full px-2 py-1 text-xs font-semibold ${onlineTechnicians.includes(tech._id)
+                                    ? "bg-green-100 text-green-700"
+                                    : "bg-red-100 text-red-700"
                                     }`}
                                 >
-                                  {isUserActive(tech.status) ? "Active" : "Inactive"}
+                                  {onlineTechnicians.includes(tech._id) ? "Online" : "Offline"}
                                 </span>
                               </td>
-                              <td className="p-2 text-center">{tech.ticketsAssigned ?? 0}</td>
-                              <td className="p-2 text-center">{tech.ticketsResolved ?? 0}</td>
+                              <td className="p-2 whitespace-nowrap">{tech.ticketsAssigned ?? 0}</td>
+                              <td className="p-2 whitespace-nowrap">{tech.ticketsResolved ?? 0}</td>
                               <td className="p-2">
                                 <Link href={`/technicians/${tech._id}`}>
-                                  <Button variant="outline" size="sm">
-                                    View
-                                  </Button>
+                                  <Button size="sm" variant="outline">View</Button>
                                 </Link>
                               </td>
                             </tr>
@@ -236,11 +270,9 @@ export default function TechniciansPage() {
               </div>
             </div>
           </TabsContent>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
-            <TechnicianPerformanceChart />
-          </div>
         </Tabs>
+
+        <TechnicianPerformanceChart />
       </LayoutWithSidebar>
     </RoleGuard>
   )

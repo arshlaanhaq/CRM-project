@@ -18,6 +18,7 @@ import {
 } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { AlertCircle } from "lucide-react";
+import { getSocket } from "@/utils/socket"
 
 export default function LoginPage() {
   const router = useRouter();
@@ -36,12 +37,16 @@ const handleSubmit = async (e: React.FormEvent) => {
     const response = await api.login(email, password);
     const { user, token } = response;
 
-    // Artificial delay (8seconds)
+    // Artificial delay (8 seconds)
     await new Promise((resolve) => setTimeout(resolve, 8000));
 
-    // Save token and user
+    // Save token and user in localStorage
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
+
+    // Connect socket with new token
+    const socket = getSocket(token);
+    // Optionally save socket to state/context if needed
 
     // Redirect based on role
     switch (user.role) {
@@ -54,7 +59,6 @@ const handleSubmit = async (e: React.FormEvent) => {
       case "technician":
         router.push("/technician-dashboard");
         break;
-     
       default:
         setError("Unknown role. Please contact support.");
     }
@@ -66,6 +70,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     setIsLoading(false);
   }
 };
+
 
 
   return (

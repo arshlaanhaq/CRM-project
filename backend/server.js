@@ -9,7 +9,7 @@ const customerComplaintRoutes = require('./routes/customerComplaintRoutes');
 const cors = require('cors');
 const http = require('http');
 const { Server } = require('socket.io');
-const socketAuth = require('./middleware/authMiddleware'); 
+const { socketAuth } = require('./middleware/authMiddleware');
 
 dotenv.config();
 connectDB();
@@ -17,11 +17,11 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// ✅ CORS
+// ✅ CORS middleware for API routes
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://crm-project-frontend-hazel.vercel.app'],         // specific domain
+  origin: ['http://localhost:3000', 'https://crm-project-frontend-hazel.vercel.app'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true              // allow cookies/auth headers
+  credentials: true,              // important for cookies/auth headers
 }));
 app.use(express.json());
 
@@ -36,43 +36,46 @@ app.get('/', (req, res) => {
   res.send('CRM API Running...');
 });
 
-//  Setup Socket.IO with JWT auth
+//  Setup Socket.IO with JWT auth and proper CORS including credentials: true
 const io = new Server(server, {
   cors: {
-    origin:  ['http://localhost:3000', 'https://crm-project-frontend-hazel.vercel.app'],
+    origin: ['http://localhost:3000', 'https://crm-project-frontend-hazel.vercel.app'],
     methods: ['GET', 'POST'],
+    credentials: true,    // *** This is the fix ***
   },
 });
 
 global.io = io; // optional global use
 
 const onlineUsers = new Map();
-
-io.use(socketAuth); //  JWT middleware
-
+io.use(socketAuth); // Apply socket auth middleware
 io.on('connection', (socket) => {
-  const user = socket.user; // attached from middleware
-  console.log('⚡ User connected:', user.name);
+  const user = socket.user;
 
-  //  Add user to online list
-  onlineUsers.set(socket.id, {
+  onlineUsers.set(user._id.toString(), {
+    socketId: socket.id,   // store socket id if needed
     _id: user._id,
     name: user.name,
     email: user.email,
     role: user.role,
   });
 
-  //  Broadcast updated online users
-  io.emit('onlineUsers', Array.from(onlineUsers.values()));
+  // Prepare arrays without duplicates because Map keys are unique by user ID
+  const onlineUsersArray = Array.from(onlineUsers.values());
+  const onlineTechnicians = onlineUsersArray.filter(u => u.role === 'technician');
+  const onlineStaff = onlineUsersArray.filter(u => u.role === 'staff');
 
-  //  Handle disconnect
+  io.emit('onlineUsers', {
+    all: onlineUsersArray,
+    technicians: onlineTechnicians,
+    staff: onlineStaff,
+  });
+
   socket.on('disconnect', () => {
-    console.log('❌ Disconnected:', user.name);
-    onlineUsers.delete(socket.id);
+    onlineUsers.delete(user._id.toString());
     io.emit('onlineUsers', Array.from(onlineUsers.values()));
   });
 });
-
-//  Start server
+// Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

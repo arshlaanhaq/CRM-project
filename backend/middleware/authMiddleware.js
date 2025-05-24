@@ -26,29 +26,33 @@ const User = require('../models/User');
     };
 
 
-    // socket.io middleware for authentication
+const socketAuth = async (socket, next) => {
+  try {
+    const token = socket.handshake.auth.token;
+    console.log('Socket token:', token);
 
-    const socketAuth = async (socket, next) => {
-      try {
-        const token = socket.handshake.auth.token;
+    if (!token) {
+      console.log('No token provided');
+      return next(new Error('Authentication token required'));
+    }
 
-        if (!token) {
-          return next(new Error('Authentication token required'));
-        }
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    console.log('Decoded token:', decoded);
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id).select('-password');
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user) {
+      console.log('User not found');
+      return next(new Error('Authentication failed'));
+    }
 
-        if (!user) {
-          return next(new Error('Authentication failed'));
-        }
-
-        socket.user = user; // Attach user to socket
-        next();
-      } catch (err) {
-        next(new Error('Invalid token'));
-      }
-    };
+    socket.user = user;
+    console.log('User authenticated:', user.name);
+    next();
+  } catch (err) {
+    console.log('Token error:', err.message);
+    next(new Error('Invalid token'));
+  }
+};
 
 const isAdmin = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
