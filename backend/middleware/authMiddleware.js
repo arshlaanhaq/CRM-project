@@ -1,32 +1,54 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const protect = async (req, res, next) => {
-  let token;
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith('Bearer')
-  ) {
-    try {
-      token = req.headers.authorization.split(' ')[1];
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = await User.findById(decoded.id).select('-password');
+    const protect = async (req, res, next) => {
+      let token;
+      if (
+        req.headers.authorization &&
+        req.headers.authorization.startsWith('Bearer')
+      ) {
+        try {
+          token = req.headers.authorization.split(' ')[1];
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          req.user = await User.findById(decoded.id).select('-password');
 
-      // console.log(' Authenticated user:', req.user);
+          // console.log(' Authenticated user:', req.user);
 
-      next();
-    } catch (error) {
-      res.status(401).json({ message: 'Not authorized, token failed' });
-    }
-  }
+          next();
+        } catch (error) {
+          res.status(401).json({ message: 'Not authorized, token failed' });
+        }
+      }
 
-  if (!token) {
-    res.status(401).json({ message: 'Not authorized, no token' });
-  }
-};
+      if (!token) {
+        res.status(401).json({ message: 'Not authorized, no token' });
+      }
+    };
 
 
+    // socket.io middleware for authentication
 
+    const socketAuth = async (socket, next) => {
+      try {
+        const token = socket.handshake.auth.token;
+
+        if (!token) {
+          return next(new Error('Authentication token required'));
+        }
+
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const user = await User.findById(decoded.id).select('-password');
+
+        if (!user) {
+          return next(new Error('Authentication failed'));
+        }
+
+        socket.user = user; // Attach user to socket
+        next();
+      } catch (err) {
+        next(new Error('Invalid token'));
+      }
+    };
 
 const isAdmin = (req, res, next) => {
     if (req.user && req.user.role === 'admin') {
@@ -113,7 +135,8 @@ module.exports = {
   isAdminOrStaff,
   isCustomer,
   isStaff,
-  isAdminOrStaffOrTechnician
+  isAdminOrStaffOrTechnician,
+  socketAuth
   // isTechnicianOrAdmin,
   // isTechnicianOrstaff,
  
