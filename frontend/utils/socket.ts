@@ -18,7 +18,7 @@ export const getSocket = (token?: string): Socket => {
     socket.disconnect();
   }
 
-  socket = io("http://localhost:5000", {
+  socket = io("https://crm-project-backend-2fe2.onrender.com", {
     transports: ["websocket"],
     auth: {
       token: storedToken,
