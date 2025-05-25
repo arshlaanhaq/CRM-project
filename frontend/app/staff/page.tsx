@@ -92,7 +92,7 @@ export default function StaffPage() {
   }, [])
 
   // Helper to check if a staff member is online
-  const isOnline = (id: string) => onlineStaffIds.includes(id)
+ 
 
   return (
     <RoleGuard allowedRoles={["admin"]}>
@@ -176,12 +176,12 @@ export default function StaffPage() {
                               <td className="p-2">{member.email}</td>
                               <td className="p-2">
                                 <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${isOnline(member._id)
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${onlineStaffIds.includes(member._id)
                                       ? "bg-green-100 text-green-800"
                                       : "bg-red-100 text-red-800"
                                     }`}
                                 >
-                                  {isOnline(member._id) ? "Online" : "Offline"}
+                                  {onlineStaffIds.includes(member._id) ? "Online" : "Offline"}
                                 </span>
                               </td>
                               <td className="p-2">{member.department || "Support"}</td>
