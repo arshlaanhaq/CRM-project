@@ -41,16 +41,22 @@ export default function Header() {
   }, [pathname])
 
 const handleLogout = () => {
+  // Remove user data from localStorage
   localStorage.removeItem("token");
   localStorage.removeItem("userName");
   localStorage.removeItem("userRole");
 
-  if (socket) {
+  // If you are using a socket ref or variable, disconnect it safely
+  if (socket && socket.connected) {
     socket.disconnect();
   }
 
+  // Optionally, clear any socket-related state here if you have
+
+  // Redirect user to login page
   router.push("/login");
 };
+
 
 
   if (!showHeader) return null

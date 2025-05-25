@@ -16,6 +16,8 @@ import {
 import { Separator } from "@/components/ui/separator"
 import { ArrowLeft, Trash2, UserCircle } from "lucide-react"
 import { toast } from "react-toastify";
+import { getSocket } from "@/utils/socket"; // make sure this is correct path
+
 
 interface User {
   _id: string;
@@ -34,6 +36,7 @@ interface User {
 export default function StaffDetailsPage() {
   const { getStaffById, deleteUser } = useApi()
   const params = useParams()
+  const [onlineStaffIds, setOnlineStaffIds] = useState<string[]>([])
   const [staff, setStaff] = useState<User | null>(null)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -49,7 +52,7 @@ export default function StaffDetailsPage() {
     const fetchStaff = async () => {
       try {
         const staffData = await getStaffById(id)
-       
+
         setStaff(staffData)
 
       } catch (err) {
@@ -59,18 +62,44 @@ export default function StaffDetailsPage() {
 
     fetchStaff()
   }, [params.id])
+ useEffect(() => {
+  const token = localStorage.getItem("token")
+  if (!token) return
+
+  const socket = getSocket(token)
+
+  const handleOnlineUsers = (data: any) => {
+    if (data?.staff?.length) {
+      setOnlineStaffIds(data.staff.map((s: any) => s._id))
+    } else {
+      setOnlineStaffIds([])
+    }
+  }
+
+  socket.on("onlineUsers", handleOnlineUsers)
+
+  socket.on("connect", () => {
+    console.log("Socket connected:", socket.id)
+  })
+
+  return () => {
+    socket.off("onlineUsers", handleOnlineUsers)
+    socket.disconnect()
+  }
+}, [])
+
 
   const handleDelete = async () => {
     // Show an alert (toast) before asking for confirmation
     toast.info(
-     <div className="text-center p-4">
-    <h3 className="text-lg font-semibold text-gray-900">
-      Delete Staff?
-    </h3>
-    <p className="text-sm text-gray-600 mt-5">
-      This action cannot be undone. Are you sure you want to proceed?
-    </p>
-    <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+      <div className="text-center p-4">
+        <h3 className="text-lg font-semibold text-gray-900">
+          Delete Staff?
+        </h3>
+        <p className="text-sm text-gray-600 mt-5">
+          This action cannot be undone. Are you sure you want to proceed?
+        </p>
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={async () => {
               try {
@@ -84,11 +113,11 @@ export default function StaffDetailsPage() {
             }}
             className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-md text-sm font-medium transition"
           >
-            Confirm 
+            Confirm
           </button>
           <button
             onClick={() => toast.dismiss()}
-             className="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-2 rounded-md text-sm font-medium transition"
+            className="w-full sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-800 px-5 py-2 rounded-md text-sm font-medium transition"
           >
             Cancel
           </button>
@@ -96,13 +125,13 @@ export default function StaffDetailsPage() {
       </div>,
 
       {
-          icon: false, // 💥 this removes the icon AND space
-    closeOnClick: false,
-    position: "top-center",
-    autoClose: false,
-    draggable: false,
-    className: "p-0 shadow-none bg-transparent", // optional: remove toast padding/border
-    bodyClassName: "p-0", // remove internal body padding
+        icon: false, // 💥 this removes the icon AND space
+        closeOnClick: false,
+        position: "top-center",
+        autoClose: false,
+        draggable: false,
+        className: "p-0 shadow-none bg-transparent", // optional: remove toast padding/border
+        bodyClassName: "p-0", // remove internal body padding
       }
     );
   };
@@ -111,9 +140,11 @@ export default function StaffDetailsPage() {
     return <div>{error}</div>
   }
 
-  if (!staff) {
-    return <div className="flex items-center justify-center h-screen" >Loading...</div>
-  }
+if (!staff) {
+  return <div className="flex items-center justify-center h-screen">Loading...</div>
+}
+
+const isOnline = onlineStaffIds.includes(staff._id)
 
   return (
     <div className="container mx-auto p-6">
@@ -148,9 +179,17 @@ export default function StaffDetailsPage() {
             </div>
             <div>
               <CardTitle className="text-2xl">{staff.name}</CardTitle>
-              <CardDescription className="flex items-center mt-1">
-                {staff.role}
+              <CardDescription className="flex items-center mt-1 gap-3">
+                <span className="capitalize">{staff.role}</span>
+                <span
+                  className={`text-xs font-medium px-2 py-1 rounded-full ${isOnline ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                    }`}
+                >
+                  {isOnline ? "Online" : "Offline"}
+                </span>
               </CardDescription>
+
+
             </div>
           </div>
         </CardHeader>

@@ -1,35 +1,49 @@
-"use client"
+"use client";
 
-import { useRouter } from "next/navigation"
-import { useState, useEffect,useRef } from "react"
-import LayoutWithSidebar from "@/components/layout-with-sidebar"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { CheckCircle, Clock, Ticket, Users, UserCog, BarChart2, AlertTriangle } from "lucide-react"
-import RecentTickets from "@/components/recent-tickets"
-import NewTicketInlineForm from "../tickets/new-inline/page"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import CreateTicketModal from "@/components/create-ticket-modal"
-import TicketStatusChart from "@/components/ticket-status-chart"
-import TechnicianPerformanceChart from "@/components/technician-performance-chart"
-import RoleGuard from "@/components/role-guard"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
-import { Badge } from "@/components/ui/badge"
-import { useApi } from "@/contexts/api-context"
-import TicketList from "@/components/ticket-list"
-import { getSocket } from "@/utils/socket"
+import { useRouter } from "next/navigation";
+import { useState, useEffect, useRef } from "react";
+import LayoutWithSidebar from "@/components/layout-with-sidebar";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  CheckCircle,
+  Clock,
+  Ticket,
+  Users,
+  UserCog,
+  BarChart2,
+  AlertTriangle,
+} from "lucide-react";
+import RecentTickets from "@/components/recent-tickets";
+import NewTicketInlineForm from "../tickets/new-inline/page";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import CreateTicketModal from "@/components/create-ticket-modal";
+import TicketStatusChart from "@/components/ticket-status-chart";
+import TechnicianPerformanceChart from "@/components/technician-performance-chart";
+import RoleGuard from "@/components/role-guard";
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { Badge } from "@/components/ui/badge";
+import { useApi } from "@/contexts/api-context";
+import TicketList from "@/components/ticket-list";
+import { getSocket } from "@/utils/socket";
 
 export default function DashboardPage() {
-  const router = useRouter()
-  const api = useApi()
-  const [tickets, setTickets] = useState<any[]>([])
+  const router = useRouter();
+  const api = useApi();
+  const [tickets, setTickets] = useState<any[]>([]);
   const [stats, setStats] = useState({
     assigned: 0,
     inProgress: 0,
     resolved: 0,
     averageResolutionTime: 0,
-  })
-  const [userRole, setUserRole] = useState<string>("")
+  });
+  const [userRole, setUserRole] = useState<string>("");
   const [analytics, setAnalytics] = useState<any>({
     totalTickets: 0,
     openTickets: 0,
@@ -40,279 +54,257 @@ export default function DashboardPage() {
     totalTechnicians: 0,
     activeManagers: 0,
     totalManagers: 0,
-  })
+  });
   type Technician = {
-    id: string
-    name: string
-    email: string
-    status?: "active" | "inactive" | string
-    ticketsAssigned?: number
-    ticketsResolved?: number
-  }
-  const { getStaff, getAllComplaints } = useApi()
-  const [staff, setStaff] = useState<any[]>([])  // Corrected type for staff state
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState("")
-  const [activeStaff, setActiveStaff] = useState(0)
-  const [totalStaff, setTotalStaff] = useState(0)
+    id: string;
+    name: string;
+    email: string;
+    status?: "active" | "inactive" | string;
+    ticketsAssigned?: number;
+    ticketsResolved?: number;
+  };
+  const { getStaff, getAllComplaints } = useApi();
+  const [staff, setStaff] = useState<any[]>([]); // Corrected type for staff state
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [activeStaff, setActiveStaff] = useState(0);
+  const [totalStaff, setTotalStaff] = useState(0);
   const [onlineTechnicians, setOnlineTechnicians] = useState<string[]>([]);
-  const [onlineStaffIds, setOnlineStaffIds] = useState<string[]>([])
-  const { getTechnicians } = useApi()
-  const [technicians, setTechnicians] = useState<Technician[]>([])
-  const [activeTechnicians, setActiveTechnicians] = useState<number>(0)
-  const [totalTechnicians, setTotalTechnicians] = useState<number>(0)
-  const [sortBy, setSortBy] = useState<string>("newest")
-  const [selectedStatus, setSelectedStatus] = useState<string>("all") // To handle the selected status filter
-  const [complaints, setComplaints] = useState([])
-  const [complaintCount, setComplaintCount] = useState(0)
-  const [isLoading, setIsLoading] = useState(false)
-const socketRef = useRef(null);
+  const [onlineStaffIds, setOnlineStaffIds] = useState<string[]>([]);
+  const { getTechnicians } = useApi();
+  const [technicians, setTechnicians] = useState<Technician[]>([]);
+  const [activeTechnicians, setActiveTechnicians] = useState<number>(0);
+  const [totalTechnicians, setTotalTechnicians] = useState<number>(0);
+  const [sortBy, setSortBy] = useState<string>("newest");
+  const [selectedStatus, setSelectedStatus] = useState<string>("all"); // To handle the selected status filter
+  const [complaints, setComplaints] = useState([]);
+  const [complaintCount, setComplaintCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(false);
+  const socketRef = useRef(null);
   useEffect(() => {
     const fetchStaff = async () => {
       try {
-        setLoading(true)
-        const data = await getStaff()
-        setStaff(data)
+        setLoading(true);
+        const data = await getStaff();
+        setStaff(data);
 
         // Calculate active staff (this is a placeholder - you might have a status field in your actual data)
         // const active = data.filter((s) => s.status === "active" || !s.status).length
         // setActiveStaff(active)
-        setTotalStaff(data.length)
+        setTotalStaff(data.length);
 
-        setError("")
+        setError("");
       } catch (err) {
-        console.error("Failed to fetch staff:", err)
-        setError("Failed to load staff data. Please try again later.")
+        console.error("Failed to fetch staff:", err);
+        setError("Failed to load staff data. Please try again later.");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchStaff()
-  }, [getStaff])
+    fetchStaff();
+  }, [getStaff]);
 
   // Get user role from localStorage and fetch analytics
   useEffect(() => {
-    const storedUserRole = localStorage.getItem("userRole") || ""
-    setUserRole(storedUserRole)
+    const storedUserRole = localStorage.getItem("userRole") || "";
+    setUserRole(storedUserRole);
 
     // Redirect technicians to their dashboard
     if (storedUserRole === "technician") {
-      router.push("/technician-dashboard")
+      router.push("/technician-dashboard");
     }
 
     // Fetch analytics data
     const fetchAnalytics = async () => {
       try {
-        const data = await api.getAnalyticsSummary()
-        setAnalytics(data)
+        const data = await api.getAnalyticsSummary();
+        setAnalytics(data);
       } catch (error) {
-        console.error("Error fetching analytics:", error)
+        console.error("Error fetching analytics:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchAnalytics()
-  }, [router, api])
-    useEffect(() => {
-      const fetchTechnicians = async () => {
-        try {
-          setLoading(true)
-          const data: Technician[] = await getTechnicians()
-          setTechnicians(data)
-          const active = data.filter((tech) => tech.status === "active" || !tech.status).length
-          setActiveTechnicians(active)
-          setTotalTechnicians(data.length)
-          setError("")
-        } catch (err) {
-          console.error("Failed to fetch technicians:", err)
-          setError("Failed to load technicians. Please try again later.")
-        } finally {
-          setLoading(false)
-        }
-      }
-  
-      fetchTechnicians()
-    }, [getTechnicians])
+    fetchAnalytics();
+  }, [router, api]);
   useEffect(() => {
-    const token = localStorage.getItem("token") || "";
-    if (!token) return;
+    const fetchTechnicians = async () => {
+      try {
+        setLoading(true);
+        const data: Technician[] = await getTechnicians();
+        setTechnicians(data);
+        const active = data.filter(
+          (tech) => tech.status === "active" || !tech.status
+        ).length;
+        setActiveTechnicians(active);
+        setTotalTechnicians(data.length);
+        setError("");
+      } catch (err) {
+        console.error("Failed to fetch technicians:", err);
+        setError("Failed to load technicians. Please try again later.");
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    socketRef.current = getSocket(token);
+    fetchTechnicians();
+  }, [getTechnicians]);
+  useEffect(() => {
+    const socket = getSocket();
+    socketRef.current = socket;
 
-    socketRef.current.on("connect", () => {
-      console.log("Socket connected:", socketRef.current.id);
-      socketRef.current.emit("getOnlineUsers"); // request fresh data on connect
+    socket.on("connect", () => {
+      console.log("Socket connected with id:", socket.id);
     });
 
-    return () => {
-      socketRef.current.disconnect();
-    };
-  }, []);
+    const handleOnlineUsers = (data: {
+      all: any[];
+      staff: any[];
+      technicians: any[];
+    }) => {
+      console.log("Received onlineUsers data:", data);
 
-  // Listen to onlineTechnicians only
-  useEffect(() => {
-    if (!socketRef.current) return;
-
-    const handleOnlineUsers = (data) => {
-      if (Array.isArray(data.technicians)) {
-        const techIds = data.technicians.map(t => t._id);
-        setOnlineTechnicians(techIds);
+      if (!data || typeof data !== "object") {
+        console.error("Invalid data:", data);
+        return;
       }
+
+      // Use the staff and technicians arrays directly
+      const staffList = data.staff || [];
+      const technicianList = data.technicians || [];
+
+      setOnlineStaffIds(staffList.map((u) => u._id)); // or u.userId if that's the key
+      setOnlineTechnicians(technicianList.map((u) => u._id));
+
+      setLoading(false);
     };
 
-    socketRef.current.on("onlineUsers", handleOnlineUsers);
+    socket.on("onlineUsers", handleOnlineUsers);
 
     return () => {
-      socketRef.current.off("onlineUsers", handleOnlineUsers);
+      socket.off("onlineUsers", handleOnlineUsers);
     };
   }, []);
-
-  // Listen to onlineStaff only
-  useEffect(() => {
-    if (!socketRef.current) return;
-
-    const handleOnlineUsers = (data) => {
-      if (Array.isArray(data.staff)) {
-        const staffIds = data.staff.map(s => s._id);
-        setOnlineStaffIds(staffIds);
-      }
-    };
-
-    socketRef.current.on("onlineUsers", handleOnlineUsers);
-
-    return () => {
-      socketRef.current.off("onlineUsers", handleOnlineUsers);
-    };
-  }, []);
-
-
-
-useEffect(() => {
-  // Function to request fresh online users from server
-  const fetchOnlineUsers = () => {
-    const token = localStorage.getItem("token") || "";
-    if (!token) return;
-    const socket = getSocket(token);
-    socket.emit("getOnlineUsers");
-  };
-
-  const interval = setInterval(() => {
-    if (onlineTechnicians.length === 0 && onlineStaffIds.length === 0) {
-      console.log("Both online lists empty. Asking server for update...");
-      fetchOnlineUsers();
-    }
-  }, 30000); // every 30 seconds
-
-  return () => clearInterval(interval);
-}, [onlineTechnicians, onlineStaffIds]);
-
-
-
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         // Fetch tickets assigned to the technician
-        const ticketData = await api.getAllTickets()
-        setTickets(ticketData)
+        const ticketData = await api.getAllTickets();
+        setTickets(ticketData);
 
         // Calculate stats
-        const assigned = ticketData.filter((ticket: any) => ticket.status === "open").length
-        const inProgress = ticketData.filter((ticket: any) => ticket.status === "in-progress").length
-        const resolved = ticketData.filter((ticket: any) => ticket.status === "resolved").length
+        const assigned = ticketData.filter(
+          (ticket: any) => ticket.status === "open"
+        ).length;
+        const inProgress = ticketData.filter(
+          (ticket: any) => ticket.status === "in-progress"
+        ).length;
+        const resolved = ticketData.filter(
+          (ticket: any) => ticket.status === "resolved"
+        ).length;
 
         setStats({
           assigned,
           inProgress,
           resolved,
           averageResolutionTime: 2.5, // This would come from the API in a real implementation
-        })
+        });
       } catch (error) {
-        console.error("Error fetching technician data:", error)
+        console.error("Error fetching technician data:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchData()
-  }, [api])
+    fetchData();
+  }, [api]);
   useEffect(() => {
     const fetchComplaints = async () => {
       try {
-        setIsLoading(true)
-        const data = await getAllComplaints() // API call to fetch complaints
-        setComplaints(data)
-        setComplaintCount(data.length) // Set total number of complaints here
+        setIsLoading(true);
+        const data = await getAllComplaints(); // API call to fetch complaints
+        setComplaints(data);
+        setComplaintCount(data.length); // Set total number of complaints here
       } catch (err) {
-        console.error("Error fetching complaints:", err)
-        setError("Failed to load complaints. Please try again.")
+        console.error("Error fetching complaints:", err);
+        setError("Failed to load complaints. Please try again.");
       } finally {
-        setIsLoading(false)
+        setIsLoading(false);
       }
-    }
+    };
 
-    fetchComplaints()
-  }, [])
+    fetchComplaints();
+  }, []);
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "open":
         return (
-          <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200">
+          <Badge
+            variant="outline"
+            className="bg-blue-50 text-blue-700 border-blue-200"
+          >
             Open
           </Badge>
-        )
+        );
       case "in-progress":
         return (
-          <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200">
+          <Badge
+            variant="outline"
+            className="bg-yellow-50 text-yellow-700 border-yellow-200"
+          >
             In Progress
           </Badge>
-        )
+        );
       case "resolved":
         return (
-          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+          <Badge
+            variant="outline"
+            className="bg-green-50 text-green-700 border-green-200"
+          >
             Resolved
           </Badge>
-        )
+        );
       default:
-        return <Badge variant="outline">Unknown</Badge>
+        return <Badge variant="outline">Unknown</Badge>;
     }
-  }
+  };
   useEffect(() => {
-    const storedUserRole = localStorage.getItem("userRole") || ""
-    setUserRole(storedUserRole)
+    const storedUserRole = localStorage.getItem("userRole") || "";
+    setUserRole(storedUserRole);
 
     const fetchTickets = async () => {
       try {
-        let ticketData
+        let ticketData;
         if (storedUserRole === "technician") {
-          ticketData = await api.getMyTickets()
+          ticketData = await api.getMyTickets();
         } else {
-          ticketData = await api.getAllTickets() // will now send token
+          ticketData = await api.getAllTickets(); // will now send token
         }
-        setTickets(ticketData)
+        setTickets(ticketData);
       } catch (error) {
-        console.error("Error fetching tickets:", error)
+        console.error("Error fetching tickets:", error);
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
-    }
+    };
 
-    fetchTickets()
-  }, [api])
+    fetchTickets();
+  }, [api]);
   const filteredTickets = tickets.filter((ticket) => {
-    if (selectedStatus === "all") return true
-    return ticket.status === selectedStatus
-  })
+    if (selectedStatus === "all") return true;
+    return ticket.status === selectedStatus;
+  });
 
   const handleStatusChange = (value: string) => {
-    setSelectedStatus(value)
-  }
+    setSelectedStatus(value);
+  };
 
   const handleSortChange = (value: string) => {
-    setSortBy(value)
-  }
+    setSortBy(value);
+  };
 
   // Only admins should see this page
   return (
@@ -326,24 +318,32 @@ useEffect(() => {
         <div className="grid grid-cols-1  xs:grid-cols-2 md:grid-cols-2 lg:grid-cols-5 gap-6 mb-6">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Open Tickets</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Open Tickets
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
                 <Ticket className="h-5 w-5 text-muted-foreground mr-2" />
-                <span className="text-2xl font-bold">{analytics.openTickets}</span>
+                <span className="text-2xl font-bold">
+                  {analytics.openTickets}
+                </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {analytics.totalTickets > 0
-                  ? `${Math.round((analytics.openTickets / analytics.totalTickets) * 100)}% of total tickets`
+                  ? `${Math.round(
+                      (analytics.openTickets / analytics.totalTickets) * 100
+                    )}% of total tickets`
                   : "No tickets yet"}
               </p>
             </CardContent>
           </Card>
 
-           <Card>
+          <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Active Technicians</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Active Technicians
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-start">
@@ -357,14 +357,18 @@ useEffect(() => {
               <p className="text-xs text-muted-foreground mt-1">
                 {loading
                   ? ""
-                  : `${totalTechnicians - onlineTechnicians.length} technicians currently offline`}
+                  : `${
+                      totalTechnicians - onlineTechnicians.length
+                    } technicians currently offline`}
               </p>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Active Staff</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Active Staff
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
@@ -378,7 +382,9 @@ useEffect(() => {
               <p className="text-xs text-muted-foreground mt-1">
                 {loading
                   ? ""
-                  : `${staff.length - onlineStaffIds.length} staff currently offline`}
+                  : `${
+                      staff.length - onlineStaffIds.length
+                    } staff currently offline`}
               </p>
               {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
             </CardContent>
@@ -393,19 +399,25 @@ useEffect(() => {
                 <CheckCircle className="h-5 w-5 text-green-500 mr-2" />
                 <span className="text-2xl font-bold">{stats.resolved}</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Average resolution: {stats.averageResolutionTime}h</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Average resolution: {stats.averageResolutionTime}h
+              </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Total Complaints</CardTitle>
+              <CardTitle className="text-sm font-medium">
+                Total Complaints
+              </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center">
                 <AlertTriangle className="h-5 w-5 text-muted-foreground mr-2" />
                 <span className="text-2xl font-bold">{complaintCount}</span>
               </div>
-              <p className="text-xs text-muted-foreground mt-1">Requires attention</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Requires attention
+              </p>
             </CardContent>
           </Card>
         </div>
@@ -420,7 +432,9 @@ useEffect(() => {
               <Card className="lg:col-span-2">
                 <CardHeader>
                   <CardTitle>Recent Tickets</CardTitle>
-                  <CardDescription>Latest customer support tickets</CardDescription>
+                  <CardDescription>
+                    Latest customer support tickets
+                  </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <TicketList tickets={filteredTickets} loading={loading} />
@@ -431,7 +445,6 @@ useEffect(() => {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-
               {/* <TechnicianPerformanceChart /> */}
             </div>
 
@@ -452,10 +465,16 @@ useEffect(() => {
             <Card>
               <CardHeader>
                 <CardTitle>Manager Overview</CardTitle>
-                <CardDescription>Performance and activity of system managers</CardDescription>
+                <CardDescription>
+                  Performance and activity of system managers
+                </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-muted-foreground">{loading ? "Loading..." : `${staff.length} staff members found`}</div>
+                <div className="text-muted-foreground">
+                  {loading
+                    ? "Loading..."
+                    : `${staff.length} staff members found`}
+                </div>
                 {error && <div className="text-red-500">{error}</div>}
               </CardContent>
             </Card>
@@ -466,5 +485,5 @@ useEffect(() => {
         </Tabs>
       </LayoutWithSidebar>
     </RoleGuard>
-  )
+  );
 }

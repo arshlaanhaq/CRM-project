@@ -70,11 +70,10 @@ export default function StaffPage() {
     const socket = getSocket(token)
 
     socket.on("onlineUsers", (data) => {
-      console.log("Received onlineUsers data:", data)
-      if (data && Array.isArray(data.staff)) {
-        console.log("Staff array:", data.staff)
+            if (data && Array.isArray(data.staff)) {
+       
         const onlineIds = data.staff.map((s: any) => s._id)
-        console.log("Online staff IDs:", onlineIds)
+       
         setOnlineStaffIds(onlineIds)
       } else {
         console.warn("No staff array found in onlineUsers data")

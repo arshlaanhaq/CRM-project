@@ -31,6 +31,7 @@ import {
 import { Progress } from "@/components/ui/progress"
 import { formatDistanceToNow } from "date-fns"
 import { toast } from "react-toastify";
+import { getSocket } from "@/utils/socket"
 
 interface TechnicianDetails {
   technician: {
@@ -69,6 +70,7 @@ export default function TechnicianDetailsPage() {
   const { deleteUser } = useApi()
   const api = useApi()
   const [technicianDetails, setTechnicianDetails] = useState<TechnicianDetails | null>(null)
+  const [onlineTechnicians, setOnlineTechnicians] = useState<string[]>([]);
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -90,17 +92,42 @@ export default function TechnicianDetailsPage() {
 
     if (params.id) fetchTechnicianDetails()
   }, [params.id, api])
+  useEffect(() => {
+    const token = localStorage.getItem("token") || "";
+    if (!token) return;
+
+    const socket = getSocket(token); // your existing socket setup
+
+    socket.on("onlineUsers", (data) => {
+      if (data && Array.isArray(data.technicians)) {
+        const onlineTechIds = data.technicians.map((t: any) => t._id);
+        console.log("Online technicians:", onlineTechIds);
+        setOnlineTechnicians(onlineTechIds);
+      } else {
+        setOnlineTechnicians([]);
+      }
+    });
+
+    socket.on("connect", () => {
+      console.log("Socket connected:", socket.id);
+    });
+
+    return () => {
+      socket.off("onlineUsers");
+      socket.disconnect();
+    };
+  }, []);
   const handleDelete = async () => {
     // Show an alert (toast) before asking for confirmation
     toast.info(
       <div className="text-center p-4">
-    <h3 className="text-lg font-semibold text-gray-900">
-      Delete Technician?
-    </h3>
-    <p className="text-sm text-gray-600 mt-5">
-      This action cannot be undone. Are you sure you want to proceed?
-    </p>
-    <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
+        <h3 className="text-lg font-semibold text-gray-900">
+          Delete Technician?
+        </h3>
+        <p className="text-sm text-gray-600 mt-5">
+          This action cannot be undone. Are you sure you want to proceed?
+        </p>
+        <div className="mt-4 flex flex-col sm:flex-row items-center justify-center gap-3">
           <button
             onClick={async () => {
               try {
@@ -112,7 +139,7 @@ export default function TechnicianDetailsPage() {
               }
               toast.dismiss()
             }}
-             className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-md text-sm font-medium transition"
+            className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-md text-sm font-medium transition"
           >
             Confirm Deletion
           </button>
@@ -126,18 +153,21 @@ export default function TechnicianDetailsPage() {
       </div>,
       {
         icon: false, // 💥 this removes the icon AND space
-    closeOnClick: false,
-    position: "top-center",
-    autoClose: false,
-    draggable: false,
-    className: "p-0 shadow-none bg-transparent", // optional: remove toast padding/border
-    bodyClassName: "p-0", // remove internal body padding
+        closeOnClick: false,
+        position: "top-center",
+        autoClose: false,
+        draggable: false,
+        className: "p-0 shadow-none bg-transparent", // optional: remove toast padding/border
+        bodyClassName: "p-0", // remove internal body padding
       }
     );
   };
 
   const formatStatus = (status?: string) =>
     status ? status.charAt(0).toUpperCase() + status.slice(1) : "Unknown"
+  if (loading || !technicianDetails) return <div>Loading...</div>;
+
+
 
 
   if (loading) {
@@ -188,6 +218,8 @@ export default function TechnicianDetailsPage() {
   }
 
   const { technician, assignedTickets } = technicianDetails
+  const isOnline = onlineTechnicians.includes(technician._id)
+  const technicianStatus = isOnline ? "online" : "offline"
 
   // Calculate total assigned and resolved tickets
   const assignedCount = assignedTickets.length
@@ -234,23 +266,24 @@ export default function TechnicianDetailsPage() {
               <CardDescription className="mt-1">{technician.team}</CardDescription>
               <div className="mt-2 flex items-center">
                 <span
-                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${technician.status === "online"
+                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${technicianStatus === "online"
                     ? "bg-green-100 text-green-800"
-                    : technician.status === "busy"
+                    : technicianStatus === "busy"
                       ? "bg-yellow-100 text-yellow-800"
                       : "bg-gray-100 text-gray-800"
                     }`}
                 >
                   <span
-                    className={`h-2 w-2 rounded-full mr-1 ${technician.status === "online"
+                    className={`h-2 w-2 rounded-full mr-1 ${technicianStatus === "online"
                       ? "bg-green-400"
-                      : technician.status === "busy"
+                      : technicianStatus === "busy"
                         ? "bg-yellow-400"
                         : "bg-gray-400"
                       }`}
                   ></span>
-                  {formatStatus(technician.status)}
+                  {formatStatus(technicianStatus)}
                 </span>
+
               </div>
             </div>
           </CardHeader>
@@ -310,15 +343,15 @@ export default function TechnicianDetailsPage() {
 
             <div>
               <h3 className="text-sm font-medium mb-4">Recent Activity</h3>
-              <div className="space-y-4">
+
+              {/* Scrollable container */}
+              <div className="max-h-64 overflow-y-auto pr-2 space-y-4">
                 {technicianDetails?.assignedTickets
                   ?.filter((ticket) => ticket.status?.toLowerCase() !== "open") // Exclude open tickets
                   .flatMap((ticket) => {
-                    // Sort ticket history by updatedAt (most recent first)
                     const sortedHistory = ticket.history
                       ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
 
-                    // Map the sorted history
                     return sortedHistory?.map((entry) => {
                       const status = entry.status?.toLowerCase()
 
@@ -349,6 +382,7 @@ export default function TechnicianDetailsPage() {
                   })}
               </div>
             </div>
+
           </CardContent>
         </Card>
       </div>

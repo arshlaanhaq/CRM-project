@@ -53,11 +53,11 @@ export default function TechniciansPage() {
     const socket = getSocket(token);
 
   socket.on("onlineUsers", (data) => {
-  console.log("Received onlineUsers data:", data);
+ 
   if (data && Array.isArray(data.technicians)) {
-    console.log("Technicians array:", data.technicians);
+    
     const onlineTechIds = data.technicians.map((t: any) => t._id);
-    console.log("Online technicians IDs:", onlineTechIds);
+   
     setOnlineTechnicians(onlineTechIds);
   } else {
     console.warn("No technicians array found in onlineUsers data");
