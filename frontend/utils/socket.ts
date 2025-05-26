@@ -18,15 +18,13 @@ export const getSocket = (token?: string): Socket => {
     socket.disconnect();
   }
 
-  socket = io("https://crm-project-backend-2fe2.onrender.com", {
-    transports: ["websocket"], // You can add polling as fallback if needed
-    auth: {
-      token: storedToken,
-    },
-    reconnection: true, // optional, true by default
-    reconnectionAttempts: 5,
-    reconnectionDelay: 1000,
-  });
+ socket = io("https://crm-project-backend-2fe2.onrender.com", {
+  transports: ["websocket"],
+  auth: { token: storedToken },
+  reconnection: true,
+  reconnectionAttempts: 5,
+  reconnectionDelay: 1000,
+});
 
   currentToken = storedToken;
 
