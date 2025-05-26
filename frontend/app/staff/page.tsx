@@ -70,10 +70,10 @@ export default function StaffPage() {
     const socket = getSocket(token)
 
     socket.on("onlineUsers", (data) => {
-            if (data && Array.isArray(data.staff)) {
-       
+      if (data && Array.isArray(data.staff)) {
+
         const onlineIds = data.staff.map((s: any) => s._id)
-       
+
         setOnlineStaffIds(onlineIds)
       } else {
         console.warn("No staff array found in onlineUsers data")
@@ -92,13 +92,13 @@ export default function StaffPage() {
   }, [])
 
   // Helper to check if a staff member is online
- 
+
 
   return (
     <RoleGuard allowedRoles={["admin"]}>
       <LayoutWithSidebar>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6">
-          <h1 className="text-2xl font-bold">Staff Dashboard</h1>
+          <h1 className="text-2xl font-bold">Staffs</h1>
           <Link href="/settings/add-staff">
             <Button className="mt-2 md:mt-0">Add Staff</Button>
           </Link>
@@ -139,8 +139,6 @@ export default function StaffPage() {
         </div>
 
         <Tabs defaultValue="all-staff">
-          {/* TabsList is commented out in your original */}
-
           <TabsContent value="all-staff">
             <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 mb-6">
               <div className="p-4">
@@ -150,9 +148,9 @@ export default function StaffPage() {
                 ) : error ? (
                   <div className="py-8 text-center text-red-500">{error}</div>
                 ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
+                  <div className="overflow-x-auto max-h-[500px] overflow-y-auto border rounded-md">
+                    <table className="w-full min-w-[700px]">
+                      <thead className="sticky top-0 bg-white z-10">
                         <tr className="border-b">
                           <th className="text-left p-2">Name</th>
                           <th className="text-left p-2">Email</th>
@@ -177,8 +175,8 @@ export default function StaffPage() {
                               <td className="p-2">
                                 <span
                                   className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${onlineStaffIds.includes(member._id)
-                                      ? "bg-green-100 text-green-800"
-                                      : "bg-red-100 text-red-800"
+                                    ? "bg-green-100 text-green-800"
+                                    : "bg-red-100 text-red-800"
                                     }`}
                                 >
                                   {onlineStaffIds.includes(member._id) ? "Online" : "Offline"}
@@ -213,10 +211,8 @@ export default function StaffPage() {
               </div>
             </div>
           </TabsContent>
-
-
-          {/* You can add more TabsContent if needed */}
         </Tabs>
+
       </LayoutWithSidebar>
     </RoleGuard>
   )

@@ -32,7 +32,7 @@ export default function TechniciansPage() {
   const [error, setError] = useState<string>("")
   const [activeTechnicians, setActiveTechnicians] = useState<number>(0)
   const [totalTechnicians, setTotalTechnicians] = useState<number>(0)
- const [onlineTechnicians, setOnlineTechnicians] = useState<string[]>([]);
+  const [onlineTechnicians, setOnlineTechnicians] = useState<string[]>([]);
   const [stats, setStats] = useState({
     assigned: 0,
     inProgress: 0,
@@ -52,18 +52,18 @@ export default function TechniciansPage() {
 
     const socket = getSocket(token);
 
-  socket.on("onlineUsers", (data) => {
- 
-  if (data && Array.isArray(data.technicians)) {
-    
-    const onlineTechIds = data.technicians.map((t: any) => t._id);
-   
-    setOnlineTechnicians(onlineTechIds);
-  } else {
-    console.warn("No technicians array found in onlineUsers data");
-    setOnlineTechnicians([]);
-  }
-});
+    socket.on("onlineUsers", (data) => {
+
+      if (data && Array.isArray(data.technicians)) {
+
+        const onlineTechIds = data.technicians.map((t: any) => t._id);
+
+        setOnlineTechnicians(onlineTechIds);
+      } else {
+        console.warn("No technicians array found in onlineUsers data");
+        setOnlineTechnicians([]);
+      }
+    });
 
 
 
@@ -153,7 +153,7 @@ export default function TechniciansPage() {
     <RoleGuard allowedRoles={["admin", "staff"]}>
       <LayoutWithSidebar>
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-6">
-          <h1 className="text-2xl font-bold">Technician Dashboard</h1>
+          <h1 className="text-2xl font-bold">Technicians </h1>
           {userRole === "admin" && (
             <Link href="/settings/add-technician">
               <Button>Add Technician</Button>
@@ -217,9 +217,9 @@ export default function TechniciansPage() {
                 ) : error ? (
                   <div className="py-8 text-center text-red-500 text-sm sm:text-base">{error}</div>
                 ) : (
-                  <div className="w-full overflow-x-auto">
+                  <div className="overflow-x-auto max-h-[500px] overflow-y-auto border rounded-md">
                     <table className="min-w-full text-sm sm:text-base">
-                      <thead>
+                      <thead className="sticky top-0 bg-white z-10">
                         <tr className="border-b">
                           <th className="text-left p-2">Name</th>
                           <th className="text-left p-2">Email</th>
@@ -231,7 +231,6 @@ export default function TechniciansPage() {
                       </thead>
                       <tbody>
                         {technicians.length === 0 ? (
-                          
                           <tr>
                             <td colSpan={6} className="text-center py-4">
                               No technicians found
@@ -239,7 +238,6 @@ export default function TechniciansPage() {
                           </tr>
                         ) : (
                           technicians.map((tech, index) => (
-                            
                             <tr key={tech._id || `tech-${index}`} className="border-b hover:bg-muted/50">
                               <td className="p-2">{tech.name}</td>
                               <td className="p-2">{tech.email}</td>
@@ -272,7 +270,8 @@ export default function TechniciansPage() {
           </TabsContent>
         </Tabs>
 
-        <TechnicianPerformanceChart />
+
+        {/* <TechnicianPerformanceChart /> */}
       </LayoutWithSidebar>
     </RoleGuard>
   )
