@@ -19,14 +19,18 @@ export const getSocket = (token?: string): Socket => {
   }
 
   socket = io("https://crm-project-backend-2fe2.onrender.com", {
-    transports: ["websocket"],
+    transports: ["websocket"], // You can add polling as fallback if needed
     auth: {
       token: storedToken,
     },
+    reconnection: true, // optional, true by default
+    reconnectionAttempts: 5,
+    reconnectionDelay: 1000,
   });
 
   currentToken = storedToken;
 
+  // 🔌 Basic connection status
   socket.on("connect", () => {
     console.log("🔌 Socket connected:", socket?.id);
   });
@@ -36,11 +40,25 @@ export const getSocket = (token?: string): Socket => {
   });
 
   socket.on("connect_error", (err) => {
-    console.error("❌ Socket connection error:", err.message);
+    if (err.message !== "xhr poll error") {
+      console.error("❌ Socket connection error:", err.message);
+    }
+  });
+
+  // 🔁 Reconnection tracking
+  socket.on("reconnect_attempt", (attempt) => {
+    console.log(`🔁 Reconnecting... attempt #${attempt}`);
+  });
+
+  socket.on("reconnect", (attempt) => {
+    console.log(`✅ Reconnected on attempt #${attempt}`);
+  });
+
+  socket.on("reconnect_failed", () => {
+    console.log("❌ Failed to reconnect after max attempts");
   });
 
   return socket;
 };
 
-// Export socket variable for direct access (might be null initially)
 export { socket };

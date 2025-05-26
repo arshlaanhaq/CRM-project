@@ -52,6 +52,7 @@ export default function TechnicianDashboardPage() {
 
     fetchData()
   }, [api])
+   const formattedId = `#TKT-${String(Math.floor(Math.random() * 10)).padStart(3, "0")}`;
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -193,7 +194,9 @@ export default function TechnicianDashboardPage() {
                   <div className="flex justify-center items-center h-40">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                   </div>
-                ) : tickets.filter((ticket) => ticket.status === "in-progress").length === 0 ? (
+                ) : tickets.filter((ticket) => ticket.status === "in-progress").length === 0 ? 
+                
+                (
                   <p className="text-center py-8 text-muted-foreground">No in-progress tickets found.</p>
                 ) : (
                   <div className="rounded-md border">
@@ -223,9 +226,10 @@ export default function TechnicianDashboardPage() {
                       <tbody className="bg-background divide-y divide-border">
                         {tickets
                           .filter((ticket) => ticket.status === "in-progress")
+                          
                           .map((ticket) => (
                             <tr key={ticket.id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{ticket.id}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{formattedId}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">{ticket.subject}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">{ticket.customer.name}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
@@ -299,8 +303,8 @@ export default function TechnicianDashboardPage() {
                           ?.filter((ticket) => ticket.status === "resolved")
                           .map((ticket) => (
                             <tr key={ticket.id}>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{ticket.id}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-sm">{ticket.subject}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">{formattedId}</td>
+                              <td className="px-6 py-4 whitespace-nowrap text-sm">{ticket.title}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">{ticket.customer?.name || "N/A"}</td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm">
                                 {getPriorityBadge(ticket.priority)}

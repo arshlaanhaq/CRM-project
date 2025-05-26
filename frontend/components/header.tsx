@@ -49,6 +49,7 @@ const handleLogout = () => {
   // If you are using a socket ref or variable, disconnect it safely
   if (socket && socket.connected) {
     socket.disconnect();
+    
   }
 
   // Optionally, clear any socket-related state here if you have
