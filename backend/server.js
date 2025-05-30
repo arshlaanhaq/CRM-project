@@ -52,30 +52,37 @@ io.use(socketAuth); // Apply socket auth middleware
 io.on('connection', (socket) => {
   const user = socket.user;
 
-  onlineUsers.set(user._id.toString(), {
-    socketId: socket.id,   // store socket id if needed
+  // Use socket.id as key to allow multiple connections per user
+  onlineUsers.set(socket.id, {
+    socketId: socket.id,
     _id: user._id,
     name: user.name,
     email: user.email,
     role: user.role,
   });
 
-  // Prepare arrays without duplicates because Map keys are unique by user ID
-  const onlineUsersArray = Array.from(onlineUsers.values());
-  const onlineTechnicians = onlineUsersArray.filter(u => u.role === 'technician');
-  const onlineStaff = onlineUsersArray.filter(u => u.role === 'staff');
+  const emitOnlineUsers = () => {
+    const onlineUsersArray = Array.from(onlineUsers.values());
+    const onlineTechnicians = onlineUsersArray.filter(u => u.role === 'technician');
+    const onlineStaff = onlineUsersArray.filter(u => u.role === 'staff');
 
-  io.emit('onlineUsers', {
-    all: onlineUsersArray,
-    technicians: onlineTechnicians,
-    staff: onlineStaff,
-  });
+    io.emit('onlineUsers', {
+      all: onlineUsersArray,
+      technicians: onlineTechnicians,
+      staff: onlineStaff,
+    });
+  };
+
+  emitOnlineUsers(); // emit on new connection
 
   socket.on('disconnect', () => {
-    onlineUsers.delete(user._id.toString());
-    io.emit('onlineUsers', Array.from(onlineUsers.values()));
+    // Remove by socket.id, so only this connection is removed
+    onlineUsers.delete(socket.id);
+    emitOnlineUsers(); // update after disconnect
   });
 });
+
+
 // Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

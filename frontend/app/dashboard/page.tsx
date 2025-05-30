@@ -129,6 +129,7 @@ export default function DashboardPage() {
 
     fetchAnalytics();
   }, [router, api]);
+
   useEffect(() => {
     const fetchTechnicians = async () => {
       try {
@@ -156,30 +157,33 @@ export default function DashboardPage() {
     socketRef.current = socket;
 
     socket.on("connect", () => {
-      console.log("Socket connected with id:", socket.id);
+      // console.log("Socket connected with id:", socket.id);
     });
 
-    const handleOnlineUsers = (data: {
-      all: any[];
-      staff: any[];
-      technicians: any[];
-    }) => {
-      console.log("Received onlineUsers data:", data);
+    const handleOnlineUsers = (data: any) => {
+      if (Array.isArray(data)) {
+        // Agar data array hai, toh ye sab users hain
+        const staffList = data.filter((u) => u.role === "staff");
+        const technicianList = data.filter((u) => u.role === "technician");
 
-      if (!data || typeof data !== "object") {
-        console.error("Invalid data:", data);
-        return;
+        setOnlineStaffIds(staffList.map((u) => u._id));
+        setOnlineTechnicians(technicianList.map((u) => u._id));
+
+      } else if (typeof data === "object" && data !== null) {
+        // Agar data object hai, toh isme staff, technicians, all hoga
+        const staffList = Array.isArray(data.staff) ? data.staff : [];
+        const technicianList = Array.isArray(data.technicians) ? data.technicians : [];
+        const allUsers = Array.isArray(data.all) ? data.all : [];
+
+        setOnlineStaffIds(staffList.map((u) => u._id));
+        setOnlineTechnicians(technicianList.map((u) => u._id));
+
+      } else {
+        console.error("Invalid onlineUsers data:", data);
       }
-
-      // Use the staff and technicians arrays directly
-      const staffList = data.staff || [];
-      const technicianList = data.technicians || [];
-
-      setOnlineStaffIds(staffList.map((u) => u._id)); // or u.userId if that's the key
-      setOnlineTechnicians(technicianList.map((u) => u._id));
-
       setLoading(false);
     };
+
 
     socket.on("onlineUsers", handleOnlineUsers);
 
@@ -332,8 +336,8 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground mt-1">
                 {analytics.totalTickets > 0
                   ? `${Math.round(
-                      (analytics.openTickets / analytics.totalTickets) * 100
-                    )}% of total tickets`
+                    (analytics.openTickets / analytics.totalTickets) * 100
+                  )}% of total tickets`
                   : "No tickets yet"}
               </p>
             </CardContent>
@@ -357,9 +361,8 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground mt-1">
                 {loading
                   ? ""
-                  : `${
-                      totalTechnicians - onlineTechnicians.length
-                    } technicians currently offline`}
+                  : `${totalTechnicians - onlineTechnicians.length
+                  } technicians currently offline`}
               </p>
             </CardContent>
           </Card>
@@ -382,9 +385,8 @@ export default function DashboardPage() {
               <p className="text-xs text-muted-foreground mt-1">
                 {loading
                   ? ""
-                  : `${
-                      staff.length - onlineStaffIds.length
-                    } staff currently offline`}
+                  : `${staff.length - onlineStaffIds.length
+                  } staff currently offline`}
               </p>
               {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
             </CardContent>

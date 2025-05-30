@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react"
 import LayoutWithSidebar from "@/components/layout-with-sidebar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { AlertCircle, CheckCircle2, Clock, Users } from "lucide-react"
+import { Tabs, TabsContent } from "@/components/ui/tabs"
+import { AlertCircle, Users } from "lucide-react"
 import RoleGuard from "@/components/role-guard"
 import { Button } from "@/components/ui/button"
 import Link from "next/link"
@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Progress } from "@/components/ui/progress"
 import { getSocket } from "@/utils/socket"
 
-// Define the shape of a staff member object
+// Staff member ka type define kiya hai
 type StaffMember = {
   _id: string
   name: string
@@ -21,15 +21,14 @@ type StaffMember = {
   status?: "active" | "inactive" | string
   department?: string
   performance?: number
-  teamSize?: number
-  teamPerformance?: number
-  ticketsHandled?: number
-  responseTime?: string
-}
-function isUserActive(status?: string): boolean {
-  return status?.toLowerCase() === "active"
+  // Baaki optional fields agar zarurat ho toh add kar sakte hain
 }
 
+type OnlineUsersPayload = {
+  staff?: StaffMember[]
+  technicians?: StaffMember[]
+  all?: StaffMember[]
+}
 
 export default function StaffPage() {
   const { getStaff } = useApi()
@@ -37,8 +36,6 @@ export default function StaffPage() {
   const [onlineStaffIds, setOnlineStaffIds] = useState<string[]>([])
   const [loading, setLoading] = useState<boolean>(true)
   const [error, setError] = useState<string>("")
-  const [activeStaff, setActiveStaff] = useState<number>(0)
-  const [totalStaff, setTotalStaff] = useState<number>(0)
 
   useEffect(() => {
     const fetchStaff = async () => {
@@ -46,11 +43,6 @@ export default function StaffPage() {
         setLoading(true)
         const data = await getStaff()
         setStaff(data)
-
-        const active = data.filter((s: StaffMember) => s.status === "active" || !s.status).length
-        setActiveStaff(active)
-        setTotalStaff(data.length)
-
         setError("")
       } catch (err) {
         console.error("Failed to fetch staff:", err)
@@ -63,35 +55,50 @@ export default function StaffPage() {
     fetchStaff()
   }, [getStaff])
 
-  useEffect(() => {
-    const token = localStorage.getItem("token") || ""
-    if (!token) return
+useEffect(() => {
+  const token = localStorage.getItem("token") || "";
+  if (!token) return;
 
-    const socket = getSocket(token)
+  const socket = getSocket(token);
 
-    socket.on("onlineUsers", (data) => {
-      if (data && Array.isArray(data.staff)) {
+  
+ const handleOnlineUsers = (data: any) => {
+      if (Array.isArray(data)) {
+        // Agar data array hai, toh ye sab users hain
+        const staffList = data.filter((u) => u.role === "staff");
+        // const technicianList = data.filter((u) => u.role === "technician");
 
-        const onlineIds = data.staff.map((s: any) => s._id)
+        setOnlineStaffIds(staffList.map((u) => u._id));
+        // setOnlineTechnicians(technicianList.map((u) => u._id));
 
-        setOnlineStaffIds(onlineIds)
+      } else if (typeof data === "object" && data !== null) {
+        // Agar data object hai, toh isme staff, technicians, all hoga
+        const staffList = Array.isArray(data.staff) ? data.staff : [];
+        // const technicianList = Array.isArray(data.technicians) ? data.technicians : [];
+        // const allUsers = Array.isArray(data.all) ? data.all : [];
+
+        setOnlineStaffIds(staffList.map((u) => u._id));
+        // setOnlineTechnicians(technicianList.map((u) => u._id));
+
       } else {
-        console.warn("No staff array found in onlineUsers data")
-        setOnlineStaffIds([])
+        console.error("Invalid onlineUsers data:", data);
       }
-    })
+      setLoading(false);
+    };
 
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id)
-    })
 
-    return () => {
-      socket.off("onlineUsers")
-      socket.disconnect()
-    }
-  }, [])
 
-  // Helper to check if a staff member is online
+  socket.on("onlineUsers", handleOnlineUsers);
+
+  socket.on("connect", () => {
+    console.log("Socket connected:", socket.id);
+  });
+
+  return () => {
+    socket.off("onlineUsers", handleOnlineUsers);
+    socket.disconnect();
+  };
+}, []);
 
 
   return (
@@ -120,22 +127,15 @@ export default function StaffPage() {
               <div className="flex items-center">
                 <Users className="h-5 w-5 text-muted-foreground mr-2" />
                 <span className="text-2xl font-bold">
-                  {loading
-                    ? "Loading..."
-                    : `${onlineStaffIds.length}/${staff.length}`}
+                  {loading ? "Loading..." : `${onlineStaffIds.length}/${staff.length}`}
                 </span>
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {loading
-                  ? ""
-                  : `${staff.length - onlineStaffIds.length} staff currently offline`}
+                {loading ? "" : `${staff.length - onlineStaffIds.length} staff currently offline`}
               </p>
               {error && <p className="text-red-500 text-xs mt-2">{error}</p>}
             </CardContent>
           </Card>
-
-          {/* You can uncomment and type additional cards similarly if needed */}
-
         </div>
 
         <Tabs defaultValue="all-staff">
@@ -174,25 +174,21 @@ export default function StaffPage() {
                               <td className="p-2">{member.email}</td>
                               <td className="p-2">
                                 <span
-                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${onlineStaffIds.includes(member._id)
-                                    ? "bg-green-100 text-green-800"
-                                    : "bg-red-100 text-red-800"
-                                    }`}
+                                  className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                                    onlineStaffIds.includes(member._id)
+                                      ? "bg-green-100 text-green-800"
+                                      : "bg-red-100 text-red-800"
+                                  }`}
                                 >
                                   {onlineStaffIds.includes(member._id) ? "Online" : "Offline"}
                                 </span>
                               </td>
                               <td className="p-2">{member.department || "Support"}</td>
                               <td className="p-2 w-40">
-                                <div className="flex items-center gap-2">
-                                  <Progress
-                                    value={member.performance ?? Math.floor(Math.random() * 40) + 60}
-                                    className="h-2"
-                                  />
-                                  <span className="text-xs">
-                                    {member.performance ?? Math.floor(Math.random() * 40) + 60}%
-                                  </span>
-                                </div>
+                                <Progress
+                                  value={member.performance ?? Math.floor(Math.random() * 40) + 60}
+                                  className="h-2"
+                                />
                               </td>
                               <td className="p-2">
                                 <Link href={`/staff/${member._id}`}>
@@ -212,7 +208,6 @@ export default function StaffPage() {
             </div>
           </TabsContent>
         </Tabs>
-
       </LayoutWithSidebar>
     </RoleGuard>
   )

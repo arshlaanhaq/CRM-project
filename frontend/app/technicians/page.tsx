@@ -46,36 +46,49 @@ export default function TechniciansPage() {
 
   // Initialize socket connection and listen for onlineTechnicians event
 
-  useEffect(() => {
-    const token = localStorage.getItem("token") || "";
-    if (!token) return;
+useEffect(() => {
+  const token = localStorage.getItem("token") || "";
+  if (!token) return;
 
-    const socket = getSocket(token);
+  const socket = getSocket(token);
 
-    socket.on("onlineUsers", (data) => {
+  
+ const handleOnlineUsers = (data: any) => {
+  // console.log("Online users data received:", data);
+      if (Array.isArray(data)) {
+        const technicianList = data.filter((u) => u.role === "technician");
 
-      if (data && Array.isArray(data.technicians)) {
+        // setOnlineStaffIds(staffList.map((u) => u._id));
+        setOnlineTechnicians(technicianList.map((u) => u._id));
 
-        const onlineTechIds = data.technicians.map((t: any) => t._id);
+      } else if (typeof data === "object" && data !== null) {
+        // const staffList = Array.isArray(data.staff) ? data.staff : [];
+        const technicianList = Array.isArray(data.technicians) ? data.technicians : [];
+        // const allUsers = Array.isArray(data.all) ? data.all : [];
 
-        setOnlineTechnicians(onlineTechIds);
+        // setOnlineStaffIds(staffList.map((u) => u._id));
+        setOnlineTechnicians(technicianList.map((u) => u._id));
+
       } else {
-        console.warn("No technicians array found in onlineUsers data");
-        setOnlineTechnicians([]);
+        console.error("Invalid onlineUsers data:", data);
       }
-    });
-
-
-
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
-    });
-
-    return () => {
-      socket.off("onlineUsers");
-      socket.disconnect();
+      setLoading(false);
     };
-  }, []);
+
+
+
+  socket.on("onlineUsers", handleOnlineUsers);
+
+  socket.on("connect", () => {
+    console.log("Socket connected:", socket.id);
+  });
+
+  return () => {
+    socket.off("onlineUsers", handleOnlineUsers);
+    socket.disconnect();
+  };
+}, []);
+
 
   useEffect(() => {
     const fetchTechnicians = async () => {

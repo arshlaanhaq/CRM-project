@@ -29,7 +29,7 @@ const User = require('../models/User');
 const socketAuth = async (socket, next) => {
   try {
     const token = socket.handshake.auth.token;
-    console.log('Socket token:', token);
+    // console.log('Socket token:', token);
 
     if (!token) {
       console.log('No token provided');
@@ -37,7 +37,7 @@ const socketAuth = async (socket, next) => {
     }
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    console.log('Decoded token:', decoded);
+    // console.log('Decoded token:', decoded);
 
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
@@ -46,7 +46,7 @@ const socketAuth = async (socket, next) => {
     }
 
     socket.user = user;
-    console.log('User authenticated:', user.name);
+    // console.log('User authenticated:', user.name);
     next();
   } catch (err) {
     console.log('Token error:', err.message);

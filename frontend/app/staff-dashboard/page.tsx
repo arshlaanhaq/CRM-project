@@ -81,37 +81,47 @@ export default function StaffDashboardPage() {
 
     fetchAnalytics()
   }, [router, api])
+
+
   useEffect(() => {
-    const token = localStorage.getItem("token") || "";
-    if (!token) return;
+  const token = localStorage.getItem("token") || "";
+  if (!token) return;
 
-    const socket = getSocket(token);
+  const socket = getSocket(token);
 
-    socket.on("onlineUsers", (data) => {
-      console.log("Received onlineUsers data:", data);
-      if (data && Array.isArray(data.technicians)) {
-        console.log("Technicians array:", data.technicians);
-        const onlineTechIds = data.technicians.map((t: any) => t._id);
-        console.log("Online technicians IDs:", onlineTechIds);
-        setOnlineTechnicians(onlineTechIds);
+  
+ const handleOnlineUsers = (data: any) => {
+  // console.log("Online users data received:", data);
+      if (Array.isArray(data)) {
+        const technicianList = data.filter((u) => u.role === "technician");
+
+        setOnlineTechnicians(technicianList.map((u) => u._id));
+
+      } else if (typeof data === "object" && data !== null) {
+        
+        const technicianList = Array.isArray(data.technicians) ? data.technicians : [];
+    
+        setOnlineTechnicians(technicianList.map((u) => u._id));
+
       } else {
-        console.warn("No technicians array found in onlineUsers data");
-        setOnlineTechnicians([]);
+        console.error("Invalid onlineUsers data:", data);
       }
-    });
-
-
-
-    socket.on("connect", () => {
-      console.log("Socket connected:", socket.id);
-    });
-
-    return () => {
-      socket.off("onlineUsers");
-      socket.disconnect();
+      setLoading(false);
     };
-  }, []);
 
+
+
+  socket.on("onlineUsers", handleOnlineUsers);
+
+  socket.on("connect", () => {
+    console.log("Socket connected:", socket.id);
+  });
+
+  return () => {
+    socket.off("onlineUsers", handleOnlineUsers);
+    socket.disconnect();
+  };
+}, []);
   useEffect(() => {
     const fetchData = async () => {
       try {
