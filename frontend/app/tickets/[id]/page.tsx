@@ -74,6 +74,7 @@ useEffect(() => {
       // Step 1: Fetch ticket by ID
       const ticketData = await getTicketById(id);
       setTicket(ticketData);
+      console.log(ticketData);
 
       // Step 2: If ticket includes a customerComplaint ID, fetch that
       if (ticketData.customerComplaint) {
@@ -248,7 +249,7 @@ useEffect(() => {
           </Button>
 
           <div className="mt-2">
-            <h1 className="text-2xl font-bold">
+            <h1 className="text-2xl font-bold max-w-[200px] truncate">
               Ticket #{ticket.formattedId || ticket._id}
             </h1>
             <div className="flex gap-2 mt-1">
@@ -327,6 +328,14 @@ useEffect(() => {
                           </h3>
                           <p className="text-sm">
                             {ticket.assignedTo?.name || "Unassigned"}
+                          </p>
+                        </div>
+                        <div>
+                          <h3 className="text-sm font-medium text-muted-foreground mb-2">
+                            Created by
+                          </h3>
+                          <p className="text-sm">
+                            {ticket.createdBy?.name || "Unassigned"}
                           </p>
                         </div>
                         {ticket.scheduledDate && (
