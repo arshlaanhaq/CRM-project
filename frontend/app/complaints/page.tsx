@@ -66,6 +66,8 @@ export default function ComplaintsPage() {
   const [complaints, setComplaints] = useState<ComplaintPayload[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
+  const [selectedDate, setSelectedDate] = useState<string>(""); // format: "YYYY-MM-DD"
+
 
   // Fetch complaints using getAllComplaints API
   useEffect(() => {
@@ -87,35 +89,43 @@ export default function ComplaintsPage() {
 
   // Filter complaints based on search term and filters
   // Filter complaints based on search term and filters, and sort by createdAt
-  const filteredComplaints = complaints
-    .filter((complaint) => {
-      const matchesSearch =
-        searchTerm === "" ||
-        complaint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-         complaint.email?.toLowerCase().includes(searchTerm.toLowerCase())
-        complaint.issueDescription.toLowerCase().includes(searchTerm.toLowerCase())
-       
+const formatToLocalDate = (date: Date) => {
+  return date.toLocaleDateString("en-CA"); // "YYYY-MM-DD" format in local timezone
+};
 
-      const matchesStatus = statusFilter === "all" || complaint.status === statusFilter
+const filteredComplaints = complaints
+  .filter((complaint) => {
+    const matchesSearch =
+      searchTerm === "" ||
+      complaint.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      complaint.issueDescription.toLowerCase().includes(searchTerm.toLowerCase());
 
-      let matchesDate = true
-      if (dateFilter === "last-week") {
-        const oneWeekAgo = new Date()
-        oneWeekAgo.setDate(oneWeekAgo.getDate() - 7)
-        matchesDate = new Date(complaint.createdAt!) >= oneWeekAgo
-      } else if (dateFilter === "last-month") {
-        const oneMonthAgo = new Date()
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1)
-        matchesDate = new Date(complaint.createdAt!) >= oneMonthAgo
-      }
+    const matchesStatus =
+      statusFilter === "all" || complaint.status === statusFilter;
 
-      return matchesSearch && matchesStatus && matchesDate
-    })
-    .sort((a, b) => {
-      // Sort complaints by createdAt in descending order (newest first)
-      return new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime()
-    })
+    let matchesDate = true;
+    const complaintDateObj = new Date(complaint.createdAt!);
 
+    if (dateFilter === "last-week") {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      matchesDate = complaintDateObj >= oneWeekAgo;
+    } else if (dateFilter === "last-month") {
+      const oneMonthAgo = new Date();
+      oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
+      matchesDate = complaintDateObj >= oneMonthAgo;
+    }
+
+    let matchesSpecificDate = true;
+    if (selectedDate) {
+      const complaintDate = formatToLocalDate(complaintDateObj); // local YYYY-MM-DD
+      matchesSpecificDate = complaintDate === selectedDate;
+    }
+
+    return matchesSearch && matchesStatus && matchesDate && matchesSpecificDate;
+  })
+  .sort((a, b) => new Date(b.createdAt!).getTime() - new Date(a.createdAt!).getTime());
   const pendingCount = complaints.filter((c) => c.status === "Pending").length;
   const ticketCreatedCount = complaints.filter((c) => c.status === "Ticket Created").length;
   const closedCount = complaints.filter((c) => c.status === "Closed").length;
@@ -247,16 +257,13 @@ export default function ComplaintsPage() {
                 <SelectItem value="Closed">Closed</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={dateFilter} onValueChange={setDateFilter}>
-              <SelectTrigger className="w-full sm:w-[180px]">
-                <SelectValue placeholder="Filter by date" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">All Time</SelectItem>
-                <SelectItem value="last-week">Last Week</SelectItem>
-                <SelectItem value="last-month">Last Month</SelectItem>
-              </SelectContent>
-            </Select>
+            <input
+              type="date"
+              value={selectedDate}
+              onChange={(e) => setSelectedDate(e.target.value)}
+              className="border p-2 rounded text-sm"
+            />
+
           </div>
 
           {/* Complaints Table */}
@@ -295,10 +302,10 @@ export default function ComplaintsPage() {
                           <TableCell className="max-w-[200px] truncate">{complaint.issueDescription}</TableCell>
                           <TableCell>{formatDate(complaint.createdAt?.toString() || "")}</TableCell>
                           <TableCell className="text-right">
-                           <Button variant="ghost" size="icon" onClick={() => handleViewComplaint(complaint._id!)}>
-                                 view
-                                </Button>
-                            
+                            <Button variant="ghost" size="icon" onClick={() => handleViewComplaint(complaint._id!)}>
+                              view
+                            </Button>
+
                           </TableCell>
                         </TableRow>
                       ))}

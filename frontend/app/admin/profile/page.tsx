@@ -89,7 +89,7 @@ export default function AdminProfilePage() {
 
     // Clear password error when either password field changes
     if (name === "password" || name === "confirmPassword") {
-      toast.success("Password updated successfully")
+      // toast.success("Password updated successfully")
       setPasswordError("")
     }
   }
@@ -129,7 +129,7 @@ export default function AdminProfilePage() {
 
     // Update local profile with backend response
     setProfile(updatedData)
-    setSuccess("Profile updated successfully")
+    // setSuccess("Profile updated successfully")
 
     // Optionally update localStorage
     if (typeof window !== "undefined") {
@@ -144,7 +144,7 @@ export default function AdminProfilePage() {
       password: "",
       confirmPassword: "",
     }))
-    toast.success("Profile updated successfully")
+   
     setEditMode(false)
   } catch (err) {
     console.error("Error updating profile:", err)

@@ -60,15 +60,17 @@ export default function ReportsPage() {
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date(),
   })
+  const [error, setError] = useState<string>("")
   const [hasGenerated, setHasGenerated] = useState(false);
   const [status, setStatus] = useState("all")
   const [technician, setTechnician] = useState("all")
   const [reportData, setReportData] = useState<{ tickets: Ticket[]; total: number } | null>(null)
   const [technicians, setTechnicians] = useState<any[]>([])
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
+  const [staff, setStaff] = useState<any[]>([])
+  const [selectedStaffId, setSelectedStaffId] = useState<string>("all");
 
-
-  const { getReports, getAnalyticsSummary } = useApi()
+  const { getReports, getAnalyticsSummary, getTechnicians, getStaff } = useApi()
 
   const [type, setType] = useState<ReportParams>()
 
@@ -77,7 +79,23 @@ export default function ReportsPage() {
     from: new Date(new Date().setDate(new Date().getDate() - 30)),
     to: new Date(),
   })
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        setLoading(true)
+        const data = await getStaff()
+        setStaff(data)
+        setError("")
+      } catch (err) {
+        console.error("Failed to fetch staff:", err)
+        setError("Failed to load staff data. Please try again later.")
+      } finally {
+        setLoading(false)
+      }
+    }
 
+    fetchStaff()
+  }, [getStaff])
 
 
 
@@ -199,9 +217,9 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             {/* Form Fields Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-5">
               {/* Report Type */}
-              <div className="space-y-2">
+              <div className="space-y-2 ">
                 <label className="text-sm font-medium">Report Type</label>
                 <Select value={reportType} onValueChange={setReportType}>
                   <SelectTrigger>
@@ -214,9 +232,9 @@ export default function ReportsPage() {
               </div>
 
               {/* Date Range */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Date Range</label>
-                <div className="grid gap-2">
+              <div className="space-y-2 ">
+               <label className="text-sm font-medium">Date Range</label>
+                <div className="grid gap-1">
                   <Popover>
                     <PopoverTrigger asChild>
                       <Button
@@ -230,7 +248,8 @@ export default function ReportsPage() {
                         {dateRange?.from ? (
                           dateRange.to ? (
                             <>
-                              {format(dateRange.from, "LLL dd, y")} - {format(dateRange.to, "LLL dd, y")}
+                              {format(dateRange.from, "LLL dd, y")} -{" "}
+                              {format(dateRange.to, "LLL dd, y")}
                             </>
                           ) : (
                             format(dateRange.from, "LLL dd, y")
@@ -246,7 +265,9 @@ export default function ReportsPage() {
                         mode="range"
                         defaultMonth={dateRange?.from}
                         selected={dateRange}
-                        onSelect={(range) => setDateRange(range || { from: new Date(), to: new Date() })}
+                        onSelect={(range) =>
+                          setDateRange(range || { from: new Date(), to: new Date() })
+                        }
                         numberOfMonths={2}
                       />
                     </PopoverContent>
@@ -255,7 +276,7 @@ export default function ReportsPage() {
               </div>
 
               {/* Status */}
-              <div className="space-y-2">
+              <div className="space-y-2 space-x-6">
                 <label className="text-sm font-medium">Status</label>
                 <Select value={status} onValueChange={setStatus}>
                   <SelectTrigger>
@@ -271,7 +292,8 @@ export default function ReportsPage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              {/* Technician */}
+              <div className="space-y-2 space-x-4">
                 <label className="text-sm font-medium">Technician</label>
                 <Select value={technician} onValueChange={setTechnician}>
                   <SelectTrigger>
@@ -288,7 +310,25 @@ export default function ReportsPage() {
                 </Select>
               </div>
 
+              {/* Ticket by Staff */}
+              <div className="space-y-2 space-x-3">
+                <label className="text-sm font-medium">Ticket by Staff</label>
+                <Select value={selectedStaffId} onValueChange={setSelectedStaffId}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select staff" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Staff</SelectItem>
+                    {staff.map((s) => (
+                      <SelectItem key={s._id} value={s._id}>
+                        {s.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
+
 
             {/* Action Buttons */}
             <div className="mt-6 flex flex-col sm:flex-row sm:justify-end gap-3">
@@ -333,6 +373,7 @@ export default function ReportsPage() {
                           <th className="p-2">Status</th>
                           <th className="p-2">Priority</th>
                           <th className="p-2">Created At</th>
+                          <th className="p-2">Created by</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -344,6 +385,7 @@ export default function ReportsPage() {
                             <td className="p-2">{getStatusBadge(ticket.status)}</td>
                             <td className="p-2">{getPriorityBadge(ticket.priority)}</td>
                             <td className="p-2">{format(new Date(ticket.createdAt), "PPpp")}</td>
+                            <td className="p-2">{ticket.createdBy?.name || "Not found"}</td>
                           </tr>
                         ))}
                       </tbody>
