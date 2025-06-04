@@ -310,12 +310,16 @@ const updateUserProfile = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: 'User not found' });
 
+    // Check for email uniqueness
     if (email && email !== user.email) {
       const emailExists = await User.findOne({ email });
-      if (emailExists) return res.status(400).json({ message: 'Email already in use' });
+      if (emailExists) {
+        return res.status(400).json({ message: 'Email already in use' });
+      }
       user.email = email;
     }
 
+    // Update other fields
     if (name) user.name = name;
     if (phone) user.phone = phone;
     if (address) user.address = address;
@@ -323,9 +327,9 @@ const updateUserProfile = async (req, res) => {
     if (state) user.state = state;
     if (country) user.country = country;
 
+    
     if (password) {
-      const hashedPassword = await bcrypt.hash(password, 10);
-      user.password = hashedPassword;
+      user.password = password;
     }
 
     const updatedUser = await user.save();
@@ -349,6 +353,7 @@ const updateUserProfile = async (req, res) => {
     res.status(500).json({ message: 'Server error', error: error.message });
   }
 };
+
 
 
 //  get staff-admin only
@@ -412,7 +417,8 @@ const updateAdminProfile = async (req, res) => {
     if (!user || user.role !== 'admin') {
       return res.status(404).json({ message: 'Admin not found' });
     }
-    
+
+    // Check if email is being updated and is unique
     if (req.body.email && req.body.email !== user.email) {
       const existingEmail = await User.findOne({ email: req.body.email });
       if (existingEmail && existingEmail._id.toString() !== user._id.toString()) {
@@ -420,20 +426,27 @@ const updateAdminProfile = async (req, res) => {
       }
     }
 
+    // Update profile fields
     user.name = req.body.name || user.name;
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
 
+    
     if (req.body.password) {
-      user.password = await bcrypt.hash(req.body.password, 10);
+      user.password = req.body.password; // will be hashed automatically in pre('save')
     }
 
     const updatedUser = await user.save();
-    res.status(200).json(updatedUser);
+
+    // Optional: remove password from response
+    const { password, ...rest } = updatedUser.toObject();
+
+    res.status(200).json(rest);
   } catch (err) {
     res.status(500).json({ message: 'Update failed', error: err.message });
   }
 };
+
 
 // Delete User- Admin only
 const deleteUser = async (req, res) => {
