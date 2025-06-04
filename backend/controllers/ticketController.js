@@ -2,6 +2,7 @@ const Ticket = require("../models/Ticket");
 const User = require("../models/User");
 const Complaint = require("../models/CustomerComplaint");
 const sendEmail = require("../utils/sendEmails");
+const crypto = require("crypto");
 
 const getAllTickets = async (req, res) => {
   const { status, sort } = req.query;
@@ -232,8 +233,6 @@ const markTicketResolved = async (req, res) => {
       .populate("createdBy", "name email")
       .populate("assignedTo", "name email")
       .populate("customerComplaint", "email");
-    // console.log("Ticket ID:", req.params.id);
-    // console.log("Populated Ticket:", ticket);
 
     if (!ticket) {
       return res.status(404).json({ message: "Ticket not found" });
@@ -243,8 +242,12 @@ const markTicketResolved = async (req, res) => {
       return res.status(403).json({ message: "Not authorized to resolve this ticket" });
     }
 
+    // Generate close code
+    const closeCode = crypto.randomInt(1000, 9999).toString();
+
     ticket.status = "resolved";
     ticket.resolvedAt = new Date();
+    ticket.closeCode = closeCode;
 
     ticket.history.push({
       status: "resolved",
@@ -254,38 +257,29 @@ const markTicketResolved = async (req, res) => {
 
     await ticket.save();
 
+    // Email to CUSTOMER with the code
+    if (ticket.customerComplaint?.email) {
+      await sendEmail(
+        ticket.customerComplaint.email,
+        `Your Complaint Resolved - Ticket: ${ticket.title}`,
+        `Hi,\n\nYour complaint has been resolved by ${ticket.assignedTo.name}.\n\nPlease provide the following close code to the staff to complete the ticket closure:\n\n🔐 Close Code: ${closeCode}\n\nThank you.`
+      ).catch((err) => console.error("Failed to send email to customer:", err));
+    }
+
+    // Email to STAFF (createdBy) without the code
     if (ticket.createdBy?.email) {
-      sendEmail(
+      await sendEmail(
         ticket.createdBy.email,
-        `Ticket Resolved: ${ticket.title}`,
-        `Hi ${ticket.createdBy.name},\n\nThe ticket you created has been marked as resolved by ${ticket.assignedTo.name}.\n\nTitle: ${ticket.title}\nDescription: ${ticket.description}\n\nThanks`
-      ).catch((err) => console.error("Email send failed to staff:", err));
+        `Ticket Resolved by ${ticket.assignedTo.name} - Awaiting Customer Verification`,
+        `Hi ${ticket.createdBy.name || "Staff"},\n\nThe ticket titled "${ticket.title}" has been resolved by ${ticket.assignedTo.name}.\n\nPlease collect the close code from the customer to proceed with closure.\n\nThank you.`
+      ).catch((err) => console.error("Failed to send email to staff:", err));
     }
 
-    if (ticket.customerComplaint) {
-      const complaintId = ticket.customerComplaint._id || ticket.customerComplaint;
-      const complaint = await Complaint.findById(complaintId);
-      // console.log("Complaint fetched manually:", complaint);
+    res.status(200).json({ message: "Ticket resolved, code sent to customer, info sent to staff", ticket });
 
-      if (complaint?.email) {
-        try {
-          await sendEmail(
-            complaint.email,
-            `Your Complaint Resolved: ${ticket.title}`,
-            `Hi,\n\nYour complaint associated with the ticket titled "${ticket.title}" has been marked as resolved.\n\nThanks`
-          );
-        } catch (err) {
-          console.error("Email send failed to customer:", err);
-        }
-      } else {
-        console.log("❌ Complaint found but no email.");
-      }
-    }
-
-    res.status(200).json({ message: "Ticket marked as resolved", ticket });
   } catch (error) {
-    console.error("Error resolving ticket:", error);
-    res.status(500).json({ message: "Server error", error: error.message, stack: error.stack });
+    console.error("Error in resolving ticket:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
 
@@ -327,6 +321,8 @@ const setTicketInProgress = async (req, res) => {
 
 const closeTicketByStaff = async (req, res) => {
   try {
+    const { closeCode } = req.body;
+
     const ticket = await Ticket.findById(req.params.id)
       .populate("createdBy", "name email")
       .populate("assignedTo", "name email");
@@ -336,21 +332,27 @@ const closeTicketByStaff = async (req, res) => {
     }
 
     if (ticket.createdBy._id.toString() !== req.user.id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to close this ticket" });
+      return res.status(403).json({ message: "Not authorized to close this ticket" });
+    }
+
+    if (ticket.status !== "resolved") {
+      return res.status(400).json({ message: "Ticket is not resolved yet" });
+    }
+
+    if (!closeCode || closeCode !== ticket.closeCode) {
+      return res.status(400).json({ message: "Invalid or missing close code" });
     }
 
     ticket.status = "closed";
     ticket.closedAt = new Date();
+    ticket.closeCode = undefined; // Optional: delete code after use
+
     ticket.history.push({
       status: "closed",
       updatedBy: req.user.id,
       updatedAt: ticket.closedAt,
     });
 
-    //  Update linked complaint's status
-    // console.log("ticket.complaintId", ticket.customerComplaint);
     if (ticket.customerComplaint) {
       const complaint = await Complaint.findById(ticket.customerComplaint);
       if (complaint) {
@@ -361,21 +363,41 @@ const closeTicketByStaff = async (req, res) => {
 
     await ticket.save();
 
-    // 📧 Send Email
+    // 📧 Email to Staff (who closed the ticket)
     if (ticket.createdBy?.email) {
       sendEmail(
         ticket.createdBy.email,
-        `Ticket Closed: ${ticket.title}`,
-        `Hi ${ticket.createdBy.name},\n\nThe ticket you created is closed.\n\nTitle: ${ticket.title}\nDescription: ${ticket.description}\n\nThanks`
-      ).catch((err) => console.error("Email send failed:", err));
+        `✅ Ticket Closed: ${ticket.title}`,
+        `Hi ${ticket.createdBy.name},\n\nThe ticket titled "${ticket.title}" has been successfully closed.\n\nThank you.`
+      ).catch(err => console.error("Staff email failed:", err));
+    }
+
+    // 📧 Email to Technician
+    if (ticket.assignedTo?.email) {
+      sendEmail(
+        ticket.assignedTo.email,
+        `🔒 Ticket Closed: ${ticket.title}`,
+        `Hi ${ticket.assignedTo.name},\n\nThe ticket you resolved has now been closed by the staff.\n\nTicket: ${ticket.title}\n\nThanks.`
+      ).catch(err => console.error("Technician email failed:", err));
+    }
+
+    // 📧 Email to Customer
+    if (ticket.customer?.email) {
+      sendEmail(
+        ticket.customer.email,
+        `📩 Your Complaint Ticket Closed`,
+        `Hi,\n\nYour complaint associated with the ticket titled "${ticket.title}" has been fully resolved and closed.\n\nThanks for your patience.`
+      ).catch(err => console.error("Customer email failed:", err));
     }
 
     res.status(200).json({ message: "Ticket marked as closed", ticket });
+
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Server error" });
+    console.error("Error closing ticket:", error);
+    res.status(500).json({ message: "Server error", error: error.message });
   }
 };
+
 
 
 module.exports = {

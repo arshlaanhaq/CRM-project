@@ -3,6 +3,7 @@ const mongoose = require("mongoose");
 const ticketSchema = new mongoose.Schema({
   title: { type: String, required: true },
   description: { type: String, required: true },
+
   priority: {
     type: String,
     enum: ["low", "medium", "high", "urgent"],
@@ -14,11 +15,13 @@ const ticketSchema = new mongoose.Schema({
     enum: ["open", "in-progress", "closed", "resolved"],
     default: "open",
   },
+
   assignedTo: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
     required: true,
   },
+
   createdBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
@@ -44,6 +47,11 @@ const ticketSchema = new mongoose.Schema({
       updatedAt: { type: Date, default: Date.now },
     },
   ],
+
+  // New fields for resolution & closing
+  closeCode: { type: String },       // sent to customer and used by staff to close
+  
+  closedAt: { type: Date },          // when staff closes it
 
   createdAt: { type: Date, default: Date.now },
 });
