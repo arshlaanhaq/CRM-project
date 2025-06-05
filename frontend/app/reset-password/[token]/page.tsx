@@ -81,7 +81,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
             </Link>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">
-                <Image src="/image/logo.png" alt="3i Energy Logo" width={100} height={100} />
+                <Image src="/image/new.png" alt="3i Energy Logo" width={100} height={100} />
               </h1>
               <p className="text-gray-600">Reset Password</p>
             </div>

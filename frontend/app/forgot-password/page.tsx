@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
             </Link>
             <div>
               <Image
-                src="/image/logo.png"
+                src="/image/new.png"
                 alt="3i Energy Logo"
                 width={100}
                 height={100}
