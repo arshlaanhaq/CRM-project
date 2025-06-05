@@ -79,8 +79,8 @@ const handleSubmit = async (e: React.FormEvent) => {
         <CardHeader className="space-y-1">
           <CardTitle className="text-2xl font-bold flex justify-center">
             <Image
-              src="/image/logo.png"
-              alt="3i Energy Logo"
+              src="/image/new.png"
+              alt="Demo Logo"
               width={100}
               height={100}
             />

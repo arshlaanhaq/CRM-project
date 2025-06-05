@@ -84,7 +84,7 @@ export default function CustomerComplaintForm() {
   
   return (
     <div className="container mx-auto py-6">
-      <Image src="/image/logo.png" alt="3i Energy Logo" width={100} height={100} />
+      <Image src="/image/new.png" alt="Demo logo" width={100} height={100} />
       <h1 className="text-2xl font-bold mb-6">Submit a Complaint</h1>
 
       <Card className="max-w-3xl mx-auto">
