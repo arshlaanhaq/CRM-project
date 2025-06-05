@@ -53,6 +53,8 @@ interface Ticket {
 
 export default function ReportsPage() {
   const api = useApi()
+  const [page, setPage] = useState(1);
+  const ticketsPerPage = 10;
   const [loading, setLoading] = useState(true)
   const [clicked, setClicked] = useState(false); // track if clicked once
   const [reportType, setReportType] = useState("tickets")
@@ -68,7 +70,13 @@ export default function ReportsPage() {
   const [technicians, setTechnicians] = useState<any[]>([])
   const [summary, setSummary] = useState<AnalyticsSummary | null>(null)
   const [staff, setStaff] = useState<any[]>([])
-  const [selectedStaffId, setSelectedStaffId] = useState<string>("all");
+  const [selectedStaffId, setSelectedStaffId] = useState("all")
+  // Calculate the indexes for slicing tickets to show
+  const indexOfLastTicket = page * ticketsPerPage;
+  const indexOfFirstTicket = indexOfLastTicket - ticketsPerPage;
+  const currentTickets = reportData?.tickets.slice(indexOfFirstTicket, indexOfLastTicket) || [];
+
+  const totalPages = Math.ceil((reportData?.tickets.length || 0) / ticketsPerPage);
 
   const { getReports, getAnalyticsSummary, getTechnicians, getStaff } = useApi()
 
@@ -114,9 +122,10 @@ export default function ReportsPage() {
   }, [api])
 
   const handleGenerateReport = async () => {
-    setClicked(true);   // mark clicked
-    setLoading(true);   // start loading
-    // Update the state for filters if you want:
+    setClicked(true)
+    setLoading(true)
+
+    // Save filters to state if needed
     setType({ technicianId: technician !== "all" ? technician : undefined })
     setRange(dateRange)
 
@@ -128,10 +137,10 @@ export default function ReportsPage() {
 
       if (status !== "all") params.status = status
       if (technician !== "all") params.assignedTo = technician
-
+      if (selectedStaffId !== "all") params.createdBy = selectedStaffId
 
       const response = await getReports(params)
-
+      console.log(response)
       setReportData(response)
     } catch (error) {
       console.error("Failed to fetch reports", error)
@@ -139,6 +148,7 @@ export default function ReportsPage() {
       setLoading(false)
     }
   }
+
   const handleDownload = () => {
     if (Array.isArray(reportData.tickets) && reportData.tickets.length > 0) {
       const simplifiedData = reportData.tickets.map((ticket: any) => ({
@@ -148,6 +158,7 @@ export default function ReportsPage() {
         Status: ticket.status,
         Priority: ticket.priority,
         "Created At": new Date(ticket.createdAt).toLocaleString(), // format as needed
+        "Created By": ticket.createdBy?.name || "N/A", // created by
       }))
 
       exportToExcel(simplifiedData, "report.xlsx")
@@ -233,7 +244,7 @@ export default function ReportsPage() {
 
               {/* Date Range */}
               <div className="space-y-2 ">
-               <label className="text-sm font-medium">Date Range</label>
+                <label className="text-sm font-medium">Date Range</label>
                 <div className="grid gap-1">
                   <Popover>
                     <PopoverTrigger asChild>
@@ -327,6 +338,7 @@ export default function ReportsPage() {
                   </SelectContent>
                 </Select>
               </div>
+
             </div>
 
 
@@ -377,7 +389,7 @@ export default function ReportsPage() {
                         </tr>
                       </thead>
                       <tbody>
-                        {reportData?.tickets.map((ticket) => (
+                        {currentTickets.map((ticket) => (
                           <tr key={ticket._id} className="border-b hover:bg-muted/50">
                             <td className="p-2 max-w-[200px] truncate">{ticket.title}</td>
                             <td className="p-2">{ticket.customer.name}</td>
@@ -391,6 +403,36 @@ export default function ReportsPage() {
                       </tbody>
                     </table>
                   </div>
+
+                  {/* Pagination Controls */}
+                  <div className="flex justify-center items-center gap-6 mt-6">
+                    <button
+                      onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                      disabled={page === 1}
+                      className={`px-4 py-2 rounded-md font-semibold transition-colors duration-200
+      ${page === 1 ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}
+    `}
+                      aria-label="Previous Page"
+                    >
+                      &larr; Prev
+                    </button>
+
+                    <div className="text-gray-700 font-medium">
+                      Page <span className="font-bold">{page}</span> of <span className="font-bold">{totalPages}</span>
+                    </div>
+
+                    <button
+                      onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                      disabled={page === totalPages}
+                      className={`px-4 py-2 rounded-md font-semibold transition-colors duration-200
+      ${page === totalPages ? 'bg-gray-300 text-gray-600 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}
+    `}
+                      aria-label="Next Page"
+                    >
+                      Next &rarr;
+                    </button>
+                  </div>
+
                 </CardContent>
               </Card>
             </TabsContent>

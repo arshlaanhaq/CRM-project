@@ -115,7 +115,7 @@ const handleLogout = () => {
             }
             className="text-xl font-bold"
           >
-            <Image src="/image/logo.png" alt="Logo" width={100} height={100} />
+            <Image src="/image/new.png" alt="Logo" width={100} height={100} />
           </Link>
         </div>
 

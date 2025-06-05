@@ -14,11 +14,11 @@ import 'react-toastify/dist/ReactToastify.css';
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "3i Energy CRM",
-  description: "Customer Support CRM for 3i Energy and SolarFix",
+  title: "CRM Demo",
+  description: "Customer Support CRM for Demo",
   generator: "developers",
   icons: {
-    icon: "/image/logo1.png", // <-- Path to your favicon
+    icon: "/image/sort.png", // <-- Path to your favicon
   },
 }
 
@@ -41,4 +41,4 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     </html>
   )
 }
-
+//  description: "Customer Support CRM for 3i Energy and SolarFix",

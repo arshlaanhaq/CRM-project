@@ -44,7 +44,7 @@ export default function RoleGuard({ children, allowedRoles, fallbackPath = "/das
   // Show nothing while checking authorization
   if (loading) {
     return <div className="flex items-center justify-center min-h-screen">   <Image
-                  src="/image/logo.png" // path relative to public
+                  src="/image/new.png" // path relative to public
                   alt="Description"
                   width={100}
                   height={100}

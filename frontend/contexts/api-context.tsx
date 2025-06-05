@@ -150,6 +150,7 @@ interface Ticket {
   status: string;
   priority: string;
   assignedTo?: string;
+  closeCode: string;
   customer: {
     name: string;
     email: string;
@@ -248,7 +249,7 @@ interface ApiContextType {
   getMyTickets: () => Promise<Ticket[]>;
   updateTicket: (id: string, data: UpdateTicketPayload) => Promise<Ticket>;
   resolveTicket: (id: string) => Promise<Ticket>;
-  closeTicket: (id: string) => Promise<Ticket>;
+  closeTicket: (id: string, closeCode: string) => Promise<Ticket>;
   markTicketInProgress: (id: string) => Promise<Ticket>;
   deleteTicket: (id: string) => Promise<void>;
   getTicketById: (id: string) => Promise<Ticket>;
@@ -461,8 +462,17 @@ export const ApiProvider = ({ children }: { children: ReactNode }) => {
   const resolveTicket = async (id: string) =>
     (await axios.put(`/tickets/${id}/resolve`, { resolvedAt: new Date().toISOString() })).data;
 
-  const closeTicket = async (id: string) =>
-    (await axios.put(`/tickets/${id}/close`, { closedAt: new Date().toISOString() })).data;
+const closeTicket = async (id: string, closeCode: string) => {
+  const res = await axios.put(
+    `/tickets/${id}/close`,
+    {
+      closeCode,
+      closedAt: new Date().toISOString(),
+    }
+  );
+  return res.data;
+};
+
   const markTicketInProgress = async (id: string) => {
     const res = await axios.put(`/tickets/${id}/in-progress`, { inProgressAt: new Date().toISOString() });
     return res.data.ticket;

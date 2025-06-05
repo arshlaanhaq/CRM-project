@@ -37,8 +37,14 @@ export default function TicketList({
   const api = useApi();
   const router = useRouter();
   const { resolveTicket, closeTicket, deleteTicket, markTicketInProgress } =
-    useApi();
+    api;
   const [userRole, setUserRole] = useState("");
+
+  // Modal state for close ticket
+  const [isCloseModalOpen, setIsCloseModalOpen] = useState(false);
+  const [closeCode, setCloseCode] = useState("");
+  const [closingTicketId, setClosingTicketId] = useState<string | null>(null);
+  const [loadingClose, setLoadingClose] = useState(false);
 
   useEffect(() => {
     const role = localStorage.getItem("userRole");
@@ -136,19 +142,45 @@ export default function TicketList({
     }
   };
 
-  const handleCloseTicket = async (id: string) => {
+  // Open modal to close ticket
+  const openCloseModal = (id: string) => {
+    setClosingTicketId(id);
+    setCloseCode("");
+    setIsCloseModalOpen(true);
+  };
+
+  // Close modal
+  const closeCloseModal = () => {
+    setIsCloseModalOpen(false);
+    setClosingTicketId(null);
+    setCloseCode("");
+  };
+
+  // Submit close ticket with code
+  const handleCloseSubmit = async () => {
+    if (!closeCode.trim()) {
+      toast.error("Close code is required");
+      return;
+    }
+    if (!closingTicketId) {
+      toast.error("Ticket ID missing");
+      return;
+    }
+    setLoadingClose(true);
     try {
-      await closeTicket(id);
+      await closeTicket(closingTicketId, closeCode.trim());
       toast.success("Ticket closed successfully");
+      closeCloseModal();
       router.refresh();
     } catch (error: any) {
       console.error("Close Ticket Error:", error);
       toast.error(error.response?.data?.message || "Failed to close ticket");
+    } finally {
+      setLoadingClose(false);
     }
   };
 
   const handleDeleteTicket = async (id: string) => {
-    // Show an alert (toast) before asking for confirmation
     toast.info(
       <div className="text-center p-4">
         <h3 className="text-lg font-semibold text-gray-900">Delete Ticket?</h3>
@@ -160,10 +192,10 @@ export default function TicketList({
             onClick={async () => {
               try {
                 await deleteTicket(id);
-                toast.success("Technician deleted successfully");
-                router.push("/tickets"); // Redirect to technician list or another page
+                toast.success("Ticket deleted successfully");
+                router.push("/tickets");
               } catch (error) {
-                toast.error("Failed to delete technician");
+                toast.error("Failed to delete ticket");
               }
               toast.dismiss();
             }}
@@ -180,16 +212,17 @@ export default function TicketList({
         </div>
       </div>,
       {
-        icon: false, // 💥 this removes the icon AND space
+        icon: false,
         closeOnClick: false,
         position: "top-center",
         autoClose: false,
         draggable: false,
-        className: "p-0 shadow-none bg-transparent", // optional: remove toast padding/border
+        className: "p-0 shadow-none bg-transparent",
         bodyClassName: "p-0",
       }
     );
   };
+
   const handleMarkInProgress = async (id: string) => {
     try {
       await markTicketInProgress(id);
@@ -213,115 +246,144 @@ export default function TicketList({
 
   if (filteredTickets.length === 0) {
     return (
-      <p className="text-center py-8 text-muted-foreground">
-        No tickets found.
-      </p>
+      <p className="text-center py-8 text-muted-foreground">No tickets found.</p>
     );
   }
 
   return (
-    <div className="rounded-md border">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>ID</TableHead>
-            <TableHead>Subject</TableHead>
-            <TableHead>Customer</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Priority</TableHead>
-            {userRole !== "technician" && <TableHead>Assigned To</TableHead>}
-            <TableHead>Created</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {filteredTickets.map((ticket, index) => {
-            // Generate formatted ID based on the index
-            const formattedId = `#TKT-${String(index + 1).padStart(3, "0")}`;
+    <>
+      <div className="rounded-md border">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>ID</TableHead>
+              <TableHead>Subject</TableHead>
+              <TableHead>Customer</TableHead>
+              <TableHead>Status</TableHead>
+              <TableHead>Priority</TableHead>
+              {userRole !== "technician" && <TableHead>Assigned To</TableHead>}
+              <TableHead>Created</TableHead>
+              <TableHead className="text-right">Actions</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {filteredTickets.map((ticket, index) => {
+              const formattedId = `#TKT-${String(index + 1).padStart(3, "0")}`;
+              const uniqueKey = ticket._id || ticket.id || `${ticket.title}-${index}`;
 
-            // Use unique identifier for the key
-            const uniqueKey =
-              ticket._id || ticket.id || `${ticket.title}-${index}`;
-
-            return (
-              <TableRow key={uniqueKey}>
-                <TableCell className="font-medium">{formattedId}</TableCell>
-                <TableCell className="max-w-[200px] truncate">
-                  {ticket.title}
-                </TableCell>
-                <TableCell>{ticket.customer?.name || "Unknown"}</TableCell>
-                <TableCell>{getStatusBadge(ticket.status)}</TableCell>
-                <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
-                {userRole !== "technician" && (
+              return (
+                <TableRow key={uniqueKey}>
+                  <TableCell className="font-medium">{formattedId}</TableCell>
+                  <TableCell className="max-w-[200px] truncate">{ticket.title}</TableCell>
+                  <TableCell>{ticket.customer?.name || "Unknown"}</TableCell>
+                  <TableCell>{getStatusBadge(ticket.status)}</TableCell>
+                  <TableCell>{getPriorityBadge(ticket.priority)}</TableCell>
+                  {userRole !== "technician" && (
+                    <TableCell>{ticket.assignedTo?.name || "Unassigned"}</TableCell>
+                  )}
                   <TableCell>
-                    {ticket.assignedTo?.name || "Unassigned"}
+                    {new Date(ticket.createdAt).toLocaleDateString()}
                   </TableCell>
-                )}
+                  <TableCell className="text-right">
+                    <div className="flex justify-end">
+                      <Link href={`/tickets/${ticket._id}`}>
+                        <Button variant="ghost" size="icon">
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                      </Link>
 
-                <TableCell>
-                  {new Date(ticket.createdAt).toLocaleDateString()}
-                </TableCell>
-                <TableCell className="text-right">
-                  <div className="flex justify-end">
+                      {!(userRole === "technician" && (ticket.status === "resolved" || ticket.status === "closed")) && (
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="ghost" size="icon">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            {userRole === "technician" && ticket.status === "open" && (
+                              <DropdownMenuItem onClick={() => handleMarkInProgress(ticket._id)}>
+                                Mark In Progress
+                              </DropdownMenuItem>
+                            )}
+                            {userRole === "technician" && ticket.status !== "resolved" && (
+                              <DropdownMenuItem onClick={() => handleResolveTicket(ticket._id)}>
+                                Mark as Resolved
+                              </DropdownMenuItem>
+                            )}
+                            {userRole === "staff" && ticket.status !== "closed" && (
+                              <DropdownMenuItem onClick={() => openCloseModal(ticket._id)}>
+                                Close Ticket
+                              </DropdownMenuItem>
+                            )}
+                            {(userRole === "admin" || userRole === "staff") && (
+                              <Link href={`/tickets/${ticket._id}/assign`}>
+                                <DropdownMenuItem>Assign Technician</DropdownMenuItem>
+                              </Link>
+                            )}
+                            {(userRole === "admin" || userRole === "staff") && (
+                              <Link href={`/tickets/${ticket._id}`}>
+                                <DropdownMenuItem>View Details</DropdownMenuItem>
+                              </Link>
+                            )}
+                            {userRole === "admin" && (
+                              <DropdownMenuItem
+                                className="text-red-600"
+                                onClick={() => handleDeleteTicket(ticket._id)}
+                              >
+                                Delete Ticket
+                              </DropdownMenuItem>
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      )}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
 
-                    <Link href={`/tickets/${ticket._id}`}>
-                      <Button variant="ghost" size="icon">
-                        <Eye className="h-4 w-4" />
-                      </Button>
-                    </Link>
-
-                  {!(userRole === "technician" && (ticket.status === "resolved" || ticket.status === "closed")) && (
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          {userRole === "technician" && ticket.status === "open" && (
-                            <DropdownMenuItem onClick={() => handleMarkInProgress(ticket._id)}>
-                              Mark In Progress
-                            </DropdownMenuItem>
-                          )}
-                          {userRole === "technician" && ticket.status !== "resolved" && (
-                            <DropdownMenuItem onClick={() => handleResolveTicket(ticket._id)}>
-                              Mark as Resolved
-                            </DropdownMenuItem>
-                          )}
-                          {userRole === "staff" && ticket.status !== "closed" && (
-                            <DropdownMenuItem onClick={() => handleCloseTicket(ticket._id)}>
-                              Close Ticket
-                            </DropdownMenuItem>
-                          )}
-                          {(userRole === "admin" || userRole === "staff") && (
-                            <Link href={`/tickets/${ticket._id}/assign`}>
-                              <DropdownMenuItem>Assign Technician</DropdownMenuItem>
-                            </Link>
-                          )}
-                          {(userRole === "admin" || userRole === "staff") && (
-                            <Link href={`/tickets/${ticket._id}`}>
-                              <DropdownMenuItem>View Details</DropdownMenuItem>
-                            </Link>
-                          )}
-                          {userRole === "admin" && (
-                            <DropdownMenuItem
-                              className="text-red-600"
-                              onClick={() => handleDeleteTicket(ticket._id)}
-                            >
-                              Delete Ticket
-                            </DropdownMenuItem>
-                          )}
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    )}
-
-                  </div>
-                </TableCell>
-              </TableRow>
-            );
-          })}
-        </TableBody>
-      </Table>
-    </div>
+      {/* Close Ticket Modal */}
+      {isCloseModalOpen && (
+        <div
+          className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50"
+          onClick={closeCloseModal}
+        >
+          <div
+            className="bg-white p-6 rounded shadow-lg max-w-sm w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h2 className="text-lg font-semibold mb-4">Enter close code to close this ticket</h2>
+            <input
+              type="text"
+              value={closeCode}
+              onChange={(e) => setCloseCode(e.target.value)}
+              className="w-full border border-gray-300 rounded px-3 py-2 mb-4"
+              placeholder="Close code"
+              autoFocus
+              disabled={loadingClose}
+            />
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={closeCloseModal}
+                className="px-4 py-2 bg-gray-200 rounded"
+                disabled={loadingClose}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCloseSubmit}
+                className="px-4 py-2 bg-blue-600 text-white rounded"
+                disabled={loadingClose}
+              >
+                {loadingClose ? "Closing..." : "Close Ticket"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
