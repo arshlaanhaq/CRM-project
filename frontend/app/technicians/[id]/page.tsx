@@ -348,39 +348,42 @@ export default function TechnicianDetailsPage() {
               <div className="max-h-64 overflow-y-auto pr-2 space-y-4">
                 {technicianDetails?.assignedTickets
                   ?.filter((ticket) => ticket.status?.toLowerCase() !== "open") // Exclude open tickets
-                  .flatMap((ticket) => {
-                    const sortedHistory = ticket.history
-                      ?.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+                  .flatMap((ticket) =>
+                    ticket.history?.map((entry) => ({
+                      ...entry,
+                      ticketTitle: ticket.title,
+                    })) ?? []
+                  )
+                  .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()) // Sort all entries newest first
+                  .map((entry) => {
+                    const status = entry.status?.toLowerCase()
 
-                    return sortedHistory?.map((entry) => {
-                      const status = entry.status?.toLowerCase()
-
-                      const icon =
-                        status === "resolved" ? (
-                          <CheckCircle className="h-5 w-5 text-green-500" />
-                        ) : status === "in-progress" ? (
-                          <Clock className="h-5 w-5 text-yellow-500" />
-                        ) : (
-                          <Star className="h-5 w-5 text-blue-500" />
-                        )
-
-                      return (
-                        <div className="flex items-start" key={entry._id}>
-                          <div className="mr-4 mt-1">{icon}</div>
-                          <div>
-                            <p className="text-sm font-medium">
-                              {entry.status?.charAt(0).toUpperCase() + entry.status?.slice(1)} –{" "}
-                              <span className="font-normal">{ticket.title}</span>
-                            </p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {formatDistanceToNow(new Date(entry.updatedAt), { addSuffix: true })}
-                            </p>
-                          </div>
-                        </div>
+                    const icon =
+                      status === "resolved" ? (
+                        <CheckCircle className="h-5 w-5 text-green-500" />
+                      ) : status === "in-progress" ? (
+                        <Clock className="h-5 w-5 text-yellow-500" />
+                      ) : (
+                        <Star className="h-5 w-5 text-blue-500" />
                       )
-                    }) ?? []
+
+                    return (
+                      <div className="flex items-start" key={entry._id}>
+                        <div className="mr-4 mt-1">{icon}</div>
+                        <div>
+                          <p className="text-sm font-medium">
+                            {entry.status?.charAt(0).toUpperCase() + entry.status?.slice(1)} –{" "}
+                            <span className="font-normal">{entry.ticketTitle}</span>
+                          </p>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            {formatDistanceToNow(new Date(entry.updatedAt), { addSuffix: true })}
+                          </p>
+                        </div>
+                      </div>
+                    )
                   })}
               </div>
+
             </div>
 
           </CardContent>

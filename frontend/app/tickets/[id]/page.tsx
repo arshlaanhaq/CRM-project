@@ -306,7 +306,7 @@ useEffect(() => {
                         <h3 className="text-sm font-medium text-muted-foreground mb-2">
                           Customer Addess
                         </h3>
-                         <p className="text-sm">Address: {customerAddress}</p>
+                         <p className="text-sm"> {customerAddress}</p>
                       </div>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t">

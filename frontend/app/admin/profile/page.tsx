@@ -216,7 +216,7 @@ export default function AdminProfilePage() {
           <Tabs defaultValue="personal">
             <TabsList className="mb-4">
               <TabsTrigger value="personal">Personal Information</TabsTrigger>
-              <TabsTrigger value="work">Work Information</TabsTrigger>
+              {/* <TabsTrigger value="work">Work Information</TabsTrigger> */}
               <TabsTrigger value="security">Security</TabsTrigger>
             </TabsList>
 
@@ -252,7 +252,7 @@ export default function AdminProfilePage() {
               </Card>
             </TabsContent>
 
-            <TabsContent value="work">
+            {/* <TabsContent value="work">
               <Card>
                 <CardHeader>
                   <CardTitle>Work Information</CardTitle>
@@ -271,7 +271,7 @@ export default function AdminProfilePage() {
                   </div>
                 </CardContent>
               </Card>
-            </TabsContent>
+            </TabsContent> */}
 
             <TabsContent value="security">
               <Card>

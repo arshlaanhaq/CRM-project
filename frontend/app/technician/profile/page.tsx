@@ -93,7 +93,7 @@ export default function technicianProfilePage() {
 
     // Clear password error when either password field changes
     if (name === "password" || name === "confirmPassword") {
-      toast.success("Password updated successfully")
+      // toast.success("Password updated successfully")
       setPasswordError("")
     }
   }
@@ -165,7 +165,7 @@ export default function technicianProfilePage() {
         password: "",
         confirmPassword: "",
       }))
-              toast.success("Profile updated successfully")
+            
       // Exit edit mode
       setEditMode(false)
     } catch (err) {
@@ -301,10 +301,10 @@ export default function technicianProfilePage() {
                       <Label htmlFor="state">State/Province</Label>
                       <Input id="state" name="state" value={formData.state} onChange={handleChange} required />
                     </div>
-                    <div className="space-y-2">
+                    {/* <div className="space-y-2">
                       <Label htmlFor="zipCode">ZIP/Postal Code</Label>
                       <Input id="zipCode" name="zipCode" value={formData.zipCode} onChange={handleChange} required />
-                    </div>
+                    </div> */}
                     <div className="space-y-2">
                       <Label htmlFor="country">Country</Label>
                       <Input id="country" name="country" value={formData.country} onChange={handleChange} required />
@@ -432,10 +432,10 @@ export default function technicianProfilePage() {
                   <dt className="text-sm font-medium text-gray-500">State/Province</dt>
                   <dd className="mt-1 text-sm text-gray-900">{profile?.state}</dd>
                 </div>
-                <div>
+                {/* <div>
                   <dt className="text-sm font-medium text-gray-500">ZIP/Postal Code</dt>
                   <dd className="mt-1 text-sm text-gray-900">{profile?.zipCode}</dd>
-                </div>
+                </div> */}
                 <div>
                   <dt className="text-sm font-medium text-gray-500">Country</dt>
                   <dd className="mt-1 text-sm text-gray-900">{profile?.country}</dd>
