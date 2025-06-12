@@ -17,9 +17,10 @@ connectDB();
 const app = express();
 const server = http.createServer(app);
 
-// ✅ CORS middleware for API routes
+// ✅ Allowed origins
 const allowedOrigins = ['http://localhost:3000', 'http://82.25.109.100:3000'];
 
+// ✅ CORS middleware
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -28,14 +29,31 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
 }));
-app.options("*", cors());   
+
+// ✅ Log incoming origins for debugging
+app.use((req, res, next) => {
+  console.log('🌍 Request Origin:', req.headers.origin);
+  next();
+});
+
+// ✅ Global CORS headers for OPTIONS
+app.use((req, res, next) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(204);
+  }
+  next();
+});
+
 app.use(express.json());
 
-
-// ✅ API Routes
+// ✅ Routes
 app.use('/api/analytics', analyticsRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/tickets', ticketRoutes);
@@ -46,23 +64,24 @@ app.get('/', (req, res) => {
   res.send('CRM API Running...');
 });
 
-//  Setup Socket.IO with JWT auth and proper CORS including credentials: true
+// ✅ Socket.IO with JWT & CORS
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'http://82.25.109.100:3000'],
+    origin: allowedOrigins,
     methods: ['GET', 'POST'],
-    credentials: true,    // *** This is the fix ***
+    credentials: true,
   },
 });
 
-global.io = io; // optional global use
+global.io = io;
 
 const onlineUsers = new Map();
-io.use(socketAuth); // Apply socket auth middleware
+
+io.use(socketAuth);
+
 io.on('connection', (socket) => {
   const user = socket.user;
 
-  // Use socket.id as key to allow multiple connections per user
   onlineUsers.set(socket.id, {
     socketId: socket.id,
     _id: user._id,
@@ -72,27 +91,25 @@ io.on('connection', (socket) => {
   });
 
   const emitOnlineUsers = () => {
-    const onlineUsersArray = Array.from(onlineUsers.values());
-    const onlineTechnicians = onlineUsersArray.filter(u => u.role === 'technician');
-    const onlineStaff = onlineUsersArray.filter(u => u.role === 'staff');
+    const users = Array.from(onlineUsers.values());
+    const technicians = users.filter(u => u.role === 'technician');
+    const staff = users.filter(u => u.role === 'staff');
 
     io.emit('onlineUsers', {
-      all: onlineUsersArray,
-      technicians: onlineTechnicians,
-      staff: onlineStaff,
+      all: users,
+      technicians,
+      staff,
     });
   };
 
-  emitOnlineUsers(); // emit on new connection
+  emitOnlineUsers();
 
   socket.on('disconnect', () => {
-    // Remove by socket.id, so only this connection is removed
     onlineUsers.delete(socket.id);
-    emitOnlineUsers(); // update after disconnect
+    emitOnlineUsers();
   });
 });
 
-
-// Start server
+// ✅ Start server
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
