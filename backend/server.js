@@ -23,6 +23,8 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,              // important for cookies/auth headers
 }));
+app.options('*', cors());
+
 app.use(express.json());
 
 // ✅ API Routes
