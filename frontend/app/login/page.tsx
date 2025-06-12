@@ -38,7 +38,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     const { user, token } = response;
 
     // Artificial delay (8 seconds)
-    await new Promise((resolve) => setTimeout(resolve, 8000));
+    await new Promise((resolve) => setTimeout(resolve, 500));
 
     // Save token and user in localStorage
     localStorage.setItem("token", token);
