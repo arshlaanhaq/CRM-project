@@ -18,23 +18,19 @@ const app = express();
 const server = http.createServer(app);
 
 // ✅ CORS middleware for API routes
-app.use(cors({
-  origin: ['http://localhost:3000', 'http://82.25.109.100:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  credentials: true,              // important for cookies/auth headers
-}));
-app.options('*', cors());
-app.use((req, res, next) => {
-  res.header('Access-Control-Allow-Origin', 'http://82.25.109.100:3000');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Allow-Credentials', 'true');
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  next();
-});
+const allowedOrigins = ['http://localhost:3000', 'http://82.25.109.100:3000'];
 
+app.use(cors({
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true,
+}));
 app.use(express.json());
 
 // ✅ API Routes
