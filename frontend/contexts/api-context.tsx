@@ -281,7 +281,7 @@ export const ApiProvider = ({ children }: { children: ReactNode }) => {
   const [state, dispatch] = useReducer(forgotPasswordReducer, initialState);
    const socketRef = useRef<Socket | null>(null);
   const login = async (email: string, password: string) => {
-    const res = await axios.post("http://82.25.109.100:5000/auth/login", { email, password });
+    const res = await axios.post("/auth/login", { email, password });
     const { user, token } = res.data;
     localStorage.setItem("token", token);
     localStorage.setItem("userRole", user.role);
