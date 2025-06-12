@@ -32,6 +32,8 @@ app.use(cors({
   credentials: true,
 }));
 app.use(express.json());
+app.options("*", cors()); 
+
 
 // ✅ API Routes
 app.use('/api/analytics', analyticsRoutes);
