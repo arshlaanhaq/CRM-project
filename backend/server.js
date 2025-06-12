@@ -19,7 +19,7 @@ const server = http.createServer(app);
 
 // ✅ CORS middleware for API routes
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://crm-project-frontend-hazel.vercel.app'],
+  origin: ['http://localhost:3000', 'http://82.25.109.100:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,              // important for cookies/auth headers
 }));
@@ -39,7 +39,7 @@ app.get('/', (req, res) => {
 //  Setup Socket.IO with JWT auth and proper CORS including credentials: true
 const io = new Server(server, {
   cors: {
-    origin: ['http://localhost:3000', 'https://crm-project-frontend-hazel.vercel.app'],
+    origin: ['http://localhost:3000', 'http://82.25.109.100:3000'],
     methods: ['GET', 'POST'],
     credentials: true,    // *** This is the fix ***
   },
