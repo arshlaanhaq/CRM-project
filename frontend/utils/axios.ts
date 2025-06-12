@@ -6,7 +6,9 @@ const instance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-})
+  withCredentials: true, 
+});
+
 // 
 // Add request interceptor to include JWT token in headers
 instance.interceptors.request.use(
