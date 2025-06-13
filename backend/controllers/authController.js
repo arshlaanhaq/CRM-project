@@ -137,7 +137,7 @@ const register = async (req, res) => {
 });
 
     await user.save(); 
-    const loginlink = `https://crm-project-frontend-hazel.vercel.app/login`;
+    const loginlink = `http://82.25.109.100:3000/login`;
     await sendEmail(
       email,
       'Your account has been created',
