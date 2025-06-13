@@ -123,20 +123,20 @@ const register = async (req, res) => {
   }
 
   try {
-    
-    const user = new User({
-  name,
-  email,
-  password,
-  role,
-  phone,
-  address,
-  city,
-  state,
-  country,
-});
 
-    await user.save(); 
+    const user = new User({
+      name,
+      email,
+      password,
+      role,
+      phone,
+      address,
+      city,
+      state,
+      country,
+    });
+
+    await user.save();
     const loginlink = `http://82.25.109.100:3000/login`;
     await sendEmail(
       email,
@@ -156,22 +156,42 @@ const register = async (req, res) => {
 
 // Login user
 const login = async (req, res) => {
+  console.time("LoginRequest");
+
   const { email, password } = req.body;
 
-  // Check if the user exists
-  const user = await User.findOne({ email })
-  if (!user) return res.status(404).json({ message: 'User not found' });
- 
-  if (!(await bcrypt.compare(password, user.password))) {
-    return res.status(401).json({ message: 'Invalid credentials' });
-  }
-  // Generate JWT Token
-  const token = jwt.sign({ id: user._id, role: user.role }, process.env.JWT_SECRET, {
-    expiresIn: '1d',
-  });
+  try {
 
-  res.json({ token, user });
+    const user = await User.findOne({ email });
+    if (!user) {
+      console.timeEnd("LoginRequest");
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      console.timeEnd("LoginRequest");
+      return res.status(401).json({ message: 'Invalid credentials' });
+    }
+
+
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+
+    console.timeEnd("LoginRequest");
+    res.json({ token, user });
+
+  } catch (err) {
+    console.timeEnd("LoginRequest");
+    console.error("Login error:", err);
+    res.status(500).json({ message: 'Server error' });
+  }
 };
+
 
 
 const getAllCustomers = async (req, res) => {
@@ -327,7 +347,7 @@ const updateUserProfile = async (req, res) => {
     if (state) user.state = state;
     if (country) user.country = country;
 
-    
+
     if (password) {
       user.password = password;
     }
@@ -431,7 +451,7 @@ const updateAdminProfile = async (req, res) => {
     user.email = req.body.email || user.email;
     user.phone = req.body.phone || user.phone;
 
-    
+
     if (req.body.password) {
       user.password = req.body.password; // will be hashed automatically in pre('save')
     }
@@ -464,6 +484,6 @@ const deleteUser = async (req, res) => {
 module.exports = {
   register, login, deleteUser, getAllTechnicians, getAllStaff,
   getTechnicianById, getStaffById, getCustomerById, getAllCustomers, updateCustomerProfile,
-   updateTechnicianProfile, updateStaffProfile,getCustomerProfile, getTechnicianProfile,getStaffProfile,
-   updateAdminProfile,getAdminProfile,forgotPassword,resetPassword
+  updateTechnicianProfile, updateStaffProfile, getCustomerProfile, getTechnicianProfile, getStaffProfile,
+  updateAdminProfile, getAdminProfile, forgotPassword, resetPassword
 };

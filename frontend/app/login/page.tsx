@@ -34,21 +34,27 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError("");
 
   try {
-    const response = await api.login(email, password);
+    console.time("⏱️ Login API Total Time");
+
+    const response = await api.login(email, password); // your axios.post internally
     const { user, token } = response;
 
-    // Artificial delay (8 seconds)
+    console.timeEnd("⏱️ Login API Total Time");
+
+    // Optional: log each part too
+    console.time("⏱️ Token Save + Routing");
+
+    // Artificial delay (for testing)
     await new Promise((resolve) => setTimeout(resolve, 300));
 
     // Save token and user in localStorage
     localStorage.setItem("token", token);
     localStorage.setItem("user", JSON.stringify(user));
 
-    // Connect socket with new token
+    // Connect socket
     const socket = getSocket(token);
-    // Optionally save socket to state/context if needed
 
-    // Redirect based on role
+    // Redirect
     switch (user.role) {
       case "admin":
         router.push("/dashboard");
@@ -62,7 +68,11 @@ const handleSubmit = async (e: React.FormEvent) => {
       default:
         setError("Unknown role. Please contact support.");
     }
+
+    console.timeEnd("⏱️ Token Save + Routing");
+
   } catch (err: any) {
+    console.timeEnd("⏱️ Login API Total Time");
     setError(
       err.response?.data?.message || "Invalid credentials. Please try again."
     );
