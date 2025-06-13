@@ -101,7 +101,7 @@ export default function ResetPasswordPage({ params }: { params: Promise<{ token:
                 </p>
                 <div className="mt-6">
                   <Button asChild className="w-full">
-                    <Link href="/staff-login">Go to Login</Link>
+                    <Link href="/login">Go to Login</Link>
                   </Button>
                 </div>
               </div>
