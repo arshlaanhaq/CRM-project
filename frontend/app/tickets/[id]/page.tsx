@@ -364,51 +364,6 @@ useEffect(() => {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {/* Technician Assignment Updated (if applicable) */}
-                  {ticket.history?.find(
-                    (h: any) => h.updatedBy === ticket.assignedTo?._id
-                  ) && (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-purple-100">
-                          <User className="h-5 w-5 text-purple-700" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">
-                          Technician Assignment Updated
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          {formatDate(
-                            ticket.history.find(
-                              (h: any) => h.updatedBy === ticket.assignedTo?._id
-                            )?.updatedAt
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Assigned Technician */}
-                  {ticket.assignedTo && (
-                    <div className="flex">
-                      <div className="mr-4 flex flex-col items-center">
-                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-100">
-                          <User className="h-5 w-5 text-green-700" />
-                        </div>
-                      </div>
-                      <div>
-                        <div className="font-medium">
-                          Assigned to Technician: {ticket.assignedTo.name}
-                          
-                        </div>
-                        <div className="text-sm text-muted-foreground">
-                          Email: {ticket.assignedTo.email}
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Status Change History - Newest First */}
                   {[...ticket.history]
                     ?.reverse()
@@ -433,7 +388,50 @@ useEffect(() => {
                         </div>
                       </div>
                     ))}
+                   {/* Technician Assignment Updated (if applicable) */}
+                  {ticket.history?.find(
+                    (h: any) => h.updatedBy === ticket.assignedTo?._id
+                  ) && (
+                    <div className="flex">
+                      <div className="mr-4 flex flex-col items-center">
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-purple-100">
+                          <User className="h-5 w-5 text-purple-700" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium">
+                          Technician Assignment Updated
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatDate(
+                            ticket.history.find(
+                              (h: any) => h.updatedBy === ticket.assignedTo?._id
+                            )?.updatedAt
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
 
+                   {/* Assigned Technician */}
+                  {ticket.assignedTo && (
+                    <div className="flex">
+                      <div className="mr-4 flex flex-col items-center">
+                        <div className="h-10 w-10 flex items-center justify-center rounded-full bg-green-100">
+                          <User className="h-5 w-5 text-green-700" />
+                        </div>
+                      </div>
+                      <div>
+                        <div className="font-medium">
+                          Assigned to Technician: {ticket.assignedTo.name}
+                          
+                        </div>
+                        <div className="text-sm text-muted-foreground">
+                          Email: {ticket.assignedTo.email}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   {/* Ticket Created - Show at Bottom */}
                   <div className="flex">
                     <div className="mr-4 flex flex-col items-center">
